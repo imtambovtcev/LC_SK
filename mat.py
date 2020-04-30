@@ -271,8 +271,8 @@ def next_point(energy,n0,N,z0):
     return energy.tolist(),pb,n,period,ref,nnan_energy, wrong_energy
 
 if __name__ == "__main__":
-    initial = Path('/home/ivan/LC_SK/initials/matspx10_1_alt.npz')
-    directory = Path('/home/ivan/LC_SK/spx/alt')
+    initial = Path('/home/ivan/LC_SK/initials/matspx10_1_alt_100.npz')
+    directory = Path('/home/ivan/LC_SK/spx/alt/size/100/')
     state_name = 'matspx'
 
     if not os.path.exists(directory):
@@ -286,11 +286,11 @@ if __name__ == "__main__":
 
     if len([f for f in os.listdir(directory) if Path(f).suffix=='.npz'])==0:
         energy = []
-        Kbulk= -0.025
+        Kbulk= -0.5
         Ksurf = 0
         container = magnes.io.load(str(initial))
         ini = container["STATE"]
-        period = ini.shape[0]/N #20.0#30.1
+        period = ini.shape[0]/N
         print(f'{period = }')
         energy.append([period, *minimize(directory=Path(''),
                                          load_file=initial,
@@ -312,8 +312,8 @@ if __name__ == "__main__":
 
     Klist,Kaxis = mfm.file_manager(directory,
                              params={'double': False,
-                                     'add': [np.round(np.linspace(-0.05, -0.175,11), decimals=5).tolist(),
-                                            np.round(np.linspace(0, 14, 8), decimals=5).tolist()]
+                                     'add': [np.round(np.linspace(-0.5, -0.5,1), decimals=5).tolist(),
+                                            np.round(np.linspace(0,0, 1), decimals=5).tolist()]
                                      },dimension=2
                              )
     if len(Klist>0):
