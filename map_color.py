@@ -164,7 +164,7 @@ def point_plot(file,x,y,z,point,show=False,plot_z_projection=False,state_name=Fa
                state_name=state_name, show=False)
         plot_z_projection = False
 
-def plot_cut(x_ini,y_ini,z_ini,directory,name,n=3,show=False,cmap='terrain'):
+def plot_cut(x_ini,y_ini,z_ini,directory,name,n=-1,show=False,cmap='terrain'):
     name = str(name)
     if n == -1:
         n0=1

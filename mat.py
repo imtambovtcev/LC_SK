@@ -255,15 +255,27 @@ def next_point(energy,n0,N,z0):
     energy[wl,1]=np.nan
     nnan_energy = energy[np.invert(np.isnan(energy[:, 1]))]
     n,pb=min_period(energy)
+    print(f'{n = }')
     if pb[0]>0 and n<energy[-min(n0,len(energy)-1),0] and n>energy[min(n0,len(energy)-1),0] and (len(nnan_energy)>=5 or len(energy)>20):
         period = None
         ref = None
-    elif np.abs(n-energy[:,0].min())<np.abs(n-energy[:,0].max()):
-        period=np.round(np.nanmin(energy[:,0])-1/N,5)
-        ref=np.nanmin(nnan_energy[:,0])
+    elif pb[0]>0:
+        if np.abs(n-energy[:,0].min())<np.abs(n-energy[:,0].max()):
+            period=np.round(np.nanmin(energy[:,0])-1/N,5)
+            ref=np.nanmin(nnan_energy[:,0])
+        else:
+            period=np.round(np.nanmax(energy[:,0])+1/N,5)
+            ref = np.nanmax(nnan_energy[:, 0])
     else:
-        period=np.round(np.nanmax(energy[:,0])+1/N,5)
-        ref = np.nanmax(nnan_energy[:, 0])
+        print(np.abs(nnan_energy[np.nanargmin(nnan_energy[:,1]),0]-energy[:,0].min()))
+        print(np.abs(nnan_energy[np.nanargmin(nnan_energy[:, 1]), 0] - energy[:, 0].max()))
+        if np.abs(nnan_energy[np.nanargmin(nnan_energy[:,1]),0]-energy[:,0].min())>\
+            np.abs(nnan_energy[np.nanargmin(nnan_energy[:,1]),0]-energy[:,0].max()):
+            period=np.round(np.nanmax(energy[:,0])+1/N,5)
+            ref=np.nanmax(nnan_energy[:,0])
+        else:
+            period=np.round(np.nanmin(energy[:,0])-1/N,5)
+            ref = np.nanmin(nnan_energy[:, 0])
     if period is not None and period<2:
         period = None
         ref = None
@@ -271,8 +283,8 @@ def next_point(energy,n0,N,z0):
     return energy.tolist(),pb,n,period,ref,nnan_energy, wrong_energy
 
 if __name__ == "__main__":
-    initial = Path('/home/ivan/LC_SK/initials/matspx10_1_alt_100.npz')
-    directory = Path('/home/ivan/LC_SK/spx/alt/size/100/')
+    initial = Path('/home/ivan/LC_SK/initials/matspx10_1_alt_20.npz')
+    directory = Path('/home/ivan/LC_SK/spx/alt/7.5/')
     state_name = 'matspx'
 
     if not os.path.exists(directory):
@@ -286,8 +298,8 @@ if __name__ == "__main__":
 
     if len([f for f in os.listdir(directory) if Path(f).suffix=='.npz'])==0:
         energy = []
-        Kbulk= -0.5
-        Ksurf = 0
+        Kbulk= -0.1
+        Ksurf = 7.5
         container = magnes.io.load(str(initial))
         ini = container["STATE"]
         period = ini.shape[0]/N
@@ -312,8 +324,8 @@ if __name__ == "__main__":
 
     Klist,Kaxis = mfm.file_manager(directory,
                              params={'double': False,
-                                     'add': [np.round(np.linspace(-0.5, -0.5,1), decimals=5).tolist(),
-                                            np.round(np.linspace(0,0, 1), decimals=5).tolist()]
+                                     'add': [np.round(np.linspace(-0.1, -2.,39), decimals=5).tolist(),
+                                            np.round(np.linspace(7.5,7.5, 1), decimals=5).tolist()]
                                      },dimension=2
                              )
     if len(Klist>0):

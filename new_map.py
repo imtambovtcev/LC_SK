@@ -19,7 +19,7 @@ directory='/home/ivan/LC_SK/spx/mat2_cone/'
 state_name='cone'
 '''
 file='/home/ivan/LC_SK/initials/mat_cone.npz'
-directory='/home/ivan/LC_SK/spx/alt/5/cone/'
+directory='/home/ivan/LC_SK/spx/alt/merge/cone/'
 state_name='cone'
 
 '''
@@ -53,7 +53,7 @@ representatives = [(0., 0., 0.)]
 bc=[magnes.BC.PERIODIC,magnes.BC.PERIODIC,magnes.BC.FREE]
 
 Klist,Kaxis=mfm.file_manager(directory,
-					   params={'source':'/home/ivan/LC_SK/spx/alt/5/best/'})
+					   params={'source':'/home/ivan/LC_SK/spx/alt/merge/best/'})
 '''						   'double':False,
 							   'add': [np.round(np.linspace(0, 10, 1), decimals=6).tolist(),
                                              np.round(np.linspace(0, 20, 11), decimals=6).tolist()]})
