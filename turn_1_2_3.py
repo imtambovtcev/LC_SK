@@ -41,12 +41,11 @@ def rotate(base2,result1,base1):
 
 
 base1='/home/ivan/LC_SK/initials/cone.npz'
-base2='/home/ivan/LC_SK/initials/skyrmion.npz'
-result1='/home/ivan/LC_SK/initials/tilted_cut.npz'
+base2='/home/ivan/LC_SK/initial.npz'
+result1='/home/ivan/LC_SK/initials/skyrmion.npz'
 result2='/home/ivan/LC_SK/test.npz'
 
-save='spx/skyrmion.npz'
-K1=-0.1
+K1=-2.
 K2=7.5
 
 container = magnes.io.load(base1)
@@ -55,19 +54,28 @@ container = magnes.io.load(base2)
 base2_state = container["STATE"]
 container = magnes.io.load(result1)
 result1_state = container["STATE"]
-assert base1_state.shape==base2_state.shape
+#assert base1_state.shape==base2_state.shape
 assert base1_state.shape==result1_state.shape
 
-size= list(base1_state.shape)[:3]
+size_1= list(base1_state.shape)[:3]
+size_2= list(base2_state.shape)[:3]
 
-result2_state=np.full(result1_state.shape,np.nan)
+result2_state=np.copy(base2_state)
+n=[int((size_2[0]-size_1[0])/2),int((size_2[1]-size_1[1])/2),int((size_2[2]-size_1[2])/2)]
 
-for ct0 in range(size[0]):
-    for ct1 in range(size[1]):
-        for ct2 in range(size[2]):
-            result2_state[ct0,ct1,ct2,0,:]=rotate(base2_state[ct0,ct1,ct2,0,:],base1_state[ct0,ct1,ct2,0,:],result1_state[ct0,ct1,ct2,0,:])
+print(f'{size_1 = }')
+print(f'{size_2 = }')
+print(f'{n = }')
+for ct0 in range(size_1[0]):
+    for ct1 in range(size_1[1]):
+        for ct2 in range(size_1[2]):
+            try:
+                result2_state[ct0+n[0],ct1+n[1],ct2+n[2],0,:]=rotate(base2_state[ct0,ct1,ct2,0,:],base1_state[ct0,ct1,ct2,0,:],result1_state[ct0,ct1,ct2,0,:])
+            except:
+                print(f'error at {ct0 = }{ct1 = }{ct2 = }')
 
-print(size)
+
+
 
 primitives = [(1., 0., 0.), (0., 1., 0.), (0., 0., 1.)]
 representatives = [(0., 0., 0.)]
@@ -78,15 +86,15 @@ D=np.tan(np.pi/10)
 K1*=(D**2)
 K2 *= (D ** 2)
 
-system = magnes.System(primitives, representatives, size, bc)
+system = magnes.System(primitives, representatives, size_2, bc)
 origin = magnes.Vertex(cell=[0, 0, 0])
 system.add(magnes.Exchange(origin, magnes.Vertex([1, 0, 0]), J, [D, 0., 0.]))
 system.add(magnes.Exchange(origin, magnes.Vertex([0, 1, 0]), J, [0., D, 0.]))
 system.add(magnes.Exchange(origin, magnes.Vertex([0, 0, 1]), J, [0., 0., D]))
-K = np.zeros(size[2])
-K[0] = K2
-K[-1] = K2
-K = K.reshape(1, 1, size[2],1)
+K = np.zeros(size_2[2])
+K[0] = K1 + K2
+K[-1] = K1 + K2
+K = K.reshape(1, 1, size_2[2],1)
 system.add(magnes.Anisotropy(K))
 system.add(magnes.Anisotropy(K1,axis=[1.,0.,0.]))
 print(system)

@@ -147,8 +147,8 @@ result_directory = '/home/ivan/LC_SK/spx/mat_map/'
 mode='best'
 '''
 
-directory = ['/home/ivan/LC_SK/spx/alt/merge/cone/', '/home/ivan/LC_SK/spx/alt/merge/best/']
-result_directory = '/home/ivan/LC_SK/spx/alt/merge/best/result/'
+directory = ['/home/ivan/LC_SK/spx/alt/10/cone/', '/home/ivan/LC_SK/spx/alt/10/best/']
+result_directory = '/home/ivan/LC_SK/spx/alt/10/best/result/'
 mode='best'
 
 '''

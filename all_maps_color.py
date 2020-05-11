@@ -27,6 +27,10 @@ font = {'family' : 'sans-serif',
 matplotlib.rc('font', **font)
 cmap='viridis'
 
+def double_array(x):
+    y=np.array(sorted(x.tolist()))
+    return np.array(sorted(y.tolist() + ((y[:-1] + y[1:]) / 2).tolist()))
+
 def quatritize(K,fill=np.nan):
     x = np.array(sorted(list(set(K[:, 0].tolist()))))
     y = np.array(sorted(list(set(K[:, 1].tolist()))))
@@ -42,9 +46,9 @@ def quatritize(K,fill=np.nan):
 
 def points(x,y,energy_diff,xlim=None,ylim=None):
     eqy = []
-    #plt.scatter(x.reshape(-1),y.reshape(-1),c=energy_diff.reshape(-1))
-    #plt.colorbar()
-    #plt.show()
+    plt.scatter(x.reshape(-1),y.reshape(-1),c=energy_diff.reshape(-1))
+    plt.colorbar()
+    plt.show()
     if xlim is None:
         xlim = np.array([x.min(),x.max()])
         ylim = np.array([y.min(),y.max()])
@@ -127,7 +131,13 @@ plt.colorbar()
 plt.show()
 K=np.concatenate([K_z,K_x,K_t],axis=0)
 x=np.array(sorted(list(set(K[:,0].tolist()))))
+x=double_array(x)
+x=double_array(x)
+#x=double_array(x)
 y=np.array(sorted(list(set(K[:,1].tolist()))))
+y=double_array(y)
+y=double_array(y)
+#y=double_array(y)
 x_grid,y_grid=np.meshgrid(x,y)
 
 zcone_grid = scipy.interpolate.griddata(K_z,epu_z,(x_grid, y_grid), method='linear')
@@ -149,24 +159,24 @@ zx_points = np.concatenate([eqx,eqy],axis=0)
 print(zx_points)
 plt.plot(zx_points[:,0],zx_points[:,1],'b.')
 #plt.show()
-#plt.plot(x_grid[table].reshape(-1),y_grid[table].reshape(-1),'c.')
-#plt.show()
+plt.plot(x_grid[table].reshape(-1),y_grid[table].reshape(-1),'c.')
+plt.show()
 
 eqx,eqy,table=get_roots_2d(x_grid,y_grid,zcone_grid,tilted_grid)
 zt_points = np.concatenate([eqx,eqy],axis=0)
 print(zt_points)
-#plt.plot(zt_points[:,0],zt_points[:,1],'y.')
+plt.plot(zt_points[:,0],zt_points[:,1],'y.')
 #plt.show()
-#plt.plot(x_grid[table].reshape(-1),y_grid[table].reshape(-1),'.')
-#plt.show()
+plt.plot(x_grid[table].reshape(-1),y_grid[table].reshape(-1),'.')
+plt.show()
 
 eqx,eqy,table=get_roots_2d(x_grid,y_grid,tilted_grid,xsp_grid)
 tx_points = np.concatenate([eqx,eqy],axis=0)
 print(zt_points)
 plt.plot(tx_points[:,0],tx_points[:,1],'m.')
 #plt.show()
-#plt.plot(x_grid[table].reshape(-1),y_grid[table].reshape(-1),'.')
-#plt.show()
+plt.plot(x_grid[table].reshape(-1),y_grid[table].reshape(-1),'.')
+plt.show()
 
 
 for ds in directory_skt:

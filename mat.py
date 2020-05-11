@@ -284,7 +284,7 @@ def next_point(energy,n0,N,z0):
 
 if __name__ == "__main__":
     initial = Path('/home/ivan/LC_SK/initials/matspx10_1_alt_20.npz')
-    directory = Path('/home/ivan/LC_SK/spx/alt/7.5/')
+    directory = Path('/home/ivan/LC_SK/spx/alt/000/')
     state_name = 'matspx'
 
     if not os.path.exists(directory):
@@ -298,8 +298,8 @@ if __name__ == "__main__":
 
     if len([f for f in os.listdir(directory) if Path(f).suffix=='.npz'])==0:
         energy = []
-        Kbulk= -0.1
-        Ksurf = 7.5
+        Kbulk= 0.0
+        Ksurf = 0.
         container = magnes.io.load(str(initial))
         ini = container["STATE"]
         period = ini.shape[0]/N
@@ -324,8 +324,8 @@ if __name__ == "__main__":
 
     Klist,Kaxis = mfm.file_manager(directory,
                              params={'double': False,
-                                     'add': [np.round(np.linspace(-0.1, -2.,39), decimals=5).tolist(),
-                                            np.round(np.linspace(7.5,7.5, 1), decimals=5).tolist()]
+                                     'add': [np.round(np.linspace(0.00, 0.0,1), decimals=5).tolist(),
+                                            np.round(np.linspace(0,15, 13), decimals=5).tolist()]
                                      },dimension=2
                              )
     if len(Klist>0):

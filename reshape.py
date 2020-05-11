@@ -21,7 +21,7 @@ s = container["STATE"]
 s0=np.copy(s)
 for i in range(10):
     s=np.concatenate([s,s0],axis=0)
-new_size=[99,99,20]
+new_size=[446,99,20]
 s=magnes.utils.state_reshape(s,new_size,[0,0,0])
 print(f'{s.shape = }')
 system = magnes.System(primitives, representatives, new_size, bc)
@@ -31,7 +31,7 @@ s = state.download()
 container = magnes.io.container()
 container.store_system(system)
 container["STATE"] = s
-container.save('/home/ivan/LC_SK/initials/tilted_cut.npz')
+container.save('/home/ivan/LC_SK/initial.npz')
 '''
 fig,_,_=magnes.graphics.plot_field3D(system,state,slice2D='xy',sliceN=0)
 fig.savefig('fj_cut.pdf')
