@@ -276,15 +276,15 @@ def next_point(energy,n0,N,z0):
         else:
             period=np.round(np.nanmin(energy[:,0])-1/N,5)
             ref = np.nanmin(nnan_energy[:, 0])
-    if period is not None and period<2:
+    if period is not None and (period<2 or period>200):
         period = None
         ref = None
     print(f'{n = }\t{energy[0,0] = }\t{energy[-1, 0] = }')
     return energy.tolist(),pb,n,period,ref,nnan_energy, wrong_energy
 
 if __name__ == "__main__":
-    initial = Path('/home/ivan/LC_SK/initials/matspx10_1_alt_20.npz')
-    directory = Path('/home/ivan/LC_SK/spx/alt/000/')
+    initial = Path('/home/ivan/LC_SK/initials/matspx10_1_20.npz')
+    directory = Path('/home/ivan/LC_SK/spx/5/')
     state_name = 'matspx'
 
     if not os.path.exists(directory):
@@ -293,7 +293,7 @@ if __name__ == "__main__":
     ###############
     N=10
     n0 = 5
-    z0 = 2.
+    z0 = 0.25
     ###########
 
     if len([f for f in os.listdir(directory) if Path(f).suffix=='.npz'])==0:
@@ -324,8 +324,8 @@ if __name__ == "__main__":
 
     Klist,Kaxis = mfm.file_manager(directory,
                              params={'double': False,
-                                     'add': [np.round(np.linspace(0.00, 0.0,1), decimals=5).tolist(),
-                                            np.round(np.linspace(0,15, 13), decimals=5).tolist()]
+                                     'add': [np.round(np.linspace(0.0, -0.5,11), decimals=5).tolist(),
+                                            np.round(np.linspace(5,5, 1), decimals=5).tolist()]
                                      },dimension=2
                              )
     if len(Klist>0):

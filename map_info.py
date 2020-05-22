@@ -8,6 +8,7 @@ import matplotlib
 from pathlib import Path
 from shutil import copyfile
 import map_file_manager as mfm
+from scipy.interpolate import CubicSpline
 
 font = {'family' : 'sans-serif',
         'size'   : 16}
@@ -128,6 +129,10 @@ def map_info(directory,var={}):
     mean_z_projection=np.full(K.shape[0],np.nan)
     mean_z_abs_projection = np.full(K.shape[0], np.nan)
     mean_z_centre_projection = np.full(K.shape[0], np.nan)
+    mean_z_centre_abs_projection = np.full(K.shape[0], np.nan)
+    mean_x_centre_abs_projection = np.full(K.shape[0], np.nan)
+    mean_x_centre_abs_projection_angle = np.full(K.shape[0], np.nan)
+    angle = np.full(K.shape[0], np.nan)
     energy_if_xsp = np.full(K.shape[0], np.nan)
     xperiod = np.full(K.shape[0], np.nan)
 
@@ -158,6 +163,27 @@ def map_info(directory,var={}):
             except:()
             try:            mean_z_centre_projection[idx] = np.sum(np.dot(s[:,:,int(s.shape[2]/2)],
                                                                           np.array([0., 0., 1.]))) / (s.shape[0]*s.shape[1])
+            except:()
+            try:            mean_z_centre_abs_projection[idx] = np.sum(np.abs(np.dot(s[:,:,int(s.shape[2]/2)],
+                                                                          np.array([0., 0., 1.])))) / (s.shape[0]*s.shape[1])
+            except:()
+            try:            mean_x_centre_abs_projection[idx] = np.sum(np.abs(np.dot(s[:,:,int(s.shape[2]/2)],
+                                                                          np.array([1., 0., 0.])))) / (s.shape[0]*s.shape[1])
+            except:()
+            try:            mean_x_centre_abs_projection_angle[idx] = np.arccos(mean_x_centre_abs_projection[idx])*360/(2*np.pi)
+            except:()
+            try:
+                qm = s[:, int(system.size[1] / 2), int(system.size[2] / 2) - 3, 0, 1]
+                qp = s[:, int(system.size[1] / 2), int(system.size[2] / 2) + 3, 0, 1]
+                sp_qm = CubicSpline(range(len(qm)), qm)
+                sp_qp = CubicSpline(range(len(qp)), qp)
+                roots_qm = sp_qm.derivative().roots().tolist()
+                roots_qp = sp_qp.derivative().roots().tolist()
+                roots_qm = np.array(
+                    [i for i in roots_qm if i >= 0 and sp_qm(i) > 0.8 * qm.max() and sp_qm(i) < 1.2 * qm.max()])
+                roots_qp = np.array(
+                    [i for i in roots_qp if i >= 0 and sp_qp(i) > 0.8 * qp.max() and sp_qp(i) < 1.2 * qp.max()])
+                angle[idx] = np.abs(np.arctan(6/(roots_qm[2] - roots_qp[2]))*360/(2*np.pi))
             except:()
             try:            mean_z_abs_projection[idx] = np.sum(np.abs(np.dot(s, np.array([0., 0., 1.])))) / (s.size/3)
             except:()
@@ -198,7 +224,10 @@ def map_info(directory,var={}):
              energy=energy,energy_per_unit=energy_per_unit,state_type=state_type, state_name=state_name,
              localisation=local,centre_charge=centre_charge,border_charge=border_charge,border_turn=border_turn,
              mean_z_projection=mean_z_projection,mean_z_centre_projection=mean_z_centre_projection,
-             mean_z_abs_projection=mean_z_abs_projection,energy_if_xsp=energy_if_xsp,xperiod=xperiod,
+             mean_z_abs_projection=mean_z_abs_projection,mean_z_centre_abs_projection=mean_z_centre_abs_projection,
+             mean_x_centre_abs_projection=mean_x_centre_abs_projection,
+             mean_x_centre_abs_projection_angle=mean_x_centre_abs_projection_angle,angle=angle,
+             energy_if_xsp=energy_if_xsp,xperiod=xperiod,
              allow_pickle=True)
     structurize(directory,var)
 

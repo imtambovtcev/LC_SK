@@ -46,28 +46,42 @@ def quatritize(K,fill=np.nan):
 
 def points(x,y,energy_diff,xlim=None,ylim=None):
     eqy = []
-    plt.scatter(x.reshape(-1),y.reshape(-1),c=energy_diff.reshape(-1))
-    plt.colorbar()
-    plt.show()
+    #plt.scatter(x.reshape(-1),y.reshape(-1),c=energy_diff.reshape(-1))
+    #plt.colorbar()
+    #plt.show()
+    test = np.linspace(0, 20, 500)
     if xlim is None:
-        xlim = np.array([x.min(),x.max()])
-        ylim = np.array([y.min(),y.max()])
+        xlim = np.array([x.min(),x.max()]*x.shape[0]).reshape(2,-1)
+        ylim = np.array([y.min(),y.max()]*y.shape[1]).reshape(2,-1)
+    print(xlim.shape)
+    print(x.shape[0])
+    print(ylim.shape)
+    print(y.shape[1])
     for idx, row in enumerate(energy_diff.T):
         #plt.plot(y[:,idx], row)
         #plt.show()
-        roots = CubicSpline(y[:,idx], row).roots()
+        c = CubicSpline(y[:, idx], row)
+        roots = c.roots()
         for root in roots:
-            if root > ylim.min() and root <= ylim.max():
+            if root > ylim[0][idx] and root <= ylim[1][idx]:
+                #plt.plot(test, c(test))
+                #plt.title('{}{}'.format(x[0,idx],roots))
+                #plt.show()
                 eqy.append([x[0,idx], root])
     eqx = []
+    test = np.linspace(-3, 0, 100)
     for idx, column in enumerate(energy_diff):
         #plt.plot(x[idx,:], column)
         #plt.show()
-        roots = CubicSpline(x[idx,:], column).roots()
+        c = CubicSpline(x[idx,:], column)
+        roots = c.roots()
         for root in roots:
-            if root > xlim.min() and root <= xlim.max():
+            if root > xlim[0][idx] and root <= xlim[1][idx]:
                 eqx.append([root, y[idx,0]])
-    return np.array(eqx),np.array(eqy),energy_diff>0
+                #plt.plot(test, c(test))
+                #plt.title('{}{}'.format(y[idx,0], roots))
+                #plt.show()
+    return np.array(eqx),np.array(eqy),energy_diff>0,energy_diff<=0
 
 def check_state(type, energy):
     for i in np.argsort(energy):
@@ -79,15 +93,15 @@ def check_state(type, energy):
     return np.argmin(energy)
 
 def get_roots_2d(x,y,epu0,epu1):
-    epu0[np.isnan(epu0)]=np.nanmax(epu0)
+    epu_d=epu1-epu0
+    epu_d[np.isnan(epu_d)]=np.nanmax(np.abs(epu_d))
     epu1_nan=np.isnan(epu1)
-    xlim = np.array([x[np.invert(epu1_nan)].min(),x[np.invert(epu1_nan)].max()])
-    ylim = np.array([y[np.invert(epu1_nan)].min(), y[np.invert(epu1_nan)].max()])
-    print(xlim)
-    print(ylim)
-    epu1_copy=np.copy(epu1)
-    epu1_copy[epu1_nan]= epu0[epu1_nan]+0.5*np.abs(epu0[epu1_nan])
-    return points(x,y,epu1_copy-epu0,xlim,ylim)
+    nnan = np.invert(epu1_nan)
+    nnan = nnan.astype(float)
+    nnan[epu1_nan] = np.nan
+    xlim = np.array([np.nanmin(x*nnan,axis=1),np.nanmax(x*nnan,axis=1)])
+    ylim = np.array([np.nanmin(y*nnan,axis=0), np.nanmax(y*nnan,axis=0)])
+    return points(x,y,epu_d,xlim,ylim)
 
 
 show=False
@@ -113,22 +127,22 @@ if not os.path.exists(result_directory):
 data = [np.load(d + 'info/map_info_structurized.npz', allow_pickle=True) for d in directory_zcone]
 K_z = np.concatenate([df['K'].reshape(-1,2) for df in data],axis=0)
 epu_z = np.concatenate(np.array([df['energy_if_xsp'].reshape(-1) for df in data]))
-plt.scatter(K_z[:,0],K_z[:,1],c=epu_z)
-plt.colorbar()
-plt.show()
+#plt.scatter(K_z[:,0],K_z[:,1],c=epu_z)
+#plt.colorbar()
+#plt.show()
 
 data = [np.load(d + 'info/map_info_structurized.npz', allow_pickle=True) for d in directory_xsp]
 K_x = np.concatenate([df['K'].reshape(-1,2) for df in data],axis=0)
 epu_x = np.concatenate(np.array([df['energy_if_xsp'].reshape(-1) for df in data]))
-plt.scatter(K_x[:,0],K_x[:,1],c=epu_x)
-plt.colorbar()
-plt.show()
+#plt.scatter(K_x[:,0],K_x[:,1],c=epu_x)
+#plt.colorbar()
+#plt.show()
 data = [np.load(d + 'info/map_info_structurized.npz', allow_pickle=True) for d in directory_tilted]
 K_t = np.concatenate([df['K'].reshape(-1,2) for df in data],axis=0)
 epu_t = np.concatenate(np.array([df['energy_if_xsp'].reshape(-1) for df in data]))
-plt.scatter(K_t[:,0],K_t[:,1],c=epu_t)
-plt.colorbar()
-plt.show()
+#plt.scatter(K_t[:,0],K_t[:,1],c=epu_t)
+#plt.colorbar()
+#plt.show()
 K=np.concatenate([K_z,K_x,K_t],axis=0)
 x=np.array(sorted(list(set(K[:,0].tolist()))))
 x=double_array(x)
@@ -141,42 +155,51 @@ y=double_array(y)
 x_grid,y_grid=np.meshgrid(x,y)
 
 zcone_grid = scipy.interpolate.griddata(K_z,epu_z,(x_grid, y_grid), method='linear')
-plt.scatter(x_grid,y_grid,c=zcone_grid)
-plt.colorbar()
-plt.show()
+#plt.scatter(x_grid,y_grid,c=zcone_grid)
+#plt.colorbar()
+#plt.show()
 xsp_grid = scipy.interpolate.griddata(K_x,epu_x,(x_grid, y_grid), method='linear')
-plt.scatter(x_grid,y_grid,c=xsp_grid)
-plt.colorbar()
-plt.show()
+#plt.scatter(x_grid,y_grid,c=xsp_grid)
+#plt.colorbar()
+#plt.show()
 
 tilted_grid = scipy.interpolate.griddata(K_t,epu_t,(x_grid, y_grid), method='linear')
-plt.scatter(x_grid,y_grid,c=tilted_grid)
-plt.colorbar()
-plt.show()
+#plt.scatter(x_grid,y_grid,c=tilted_grid)
+#plt.colorbar()
+#plt.show()
 
-eqx,eqy,table=get_roots_2d(x_grid,y_grid,zcone_grid,xsp_grid)
+eqx,eqy,table_p,table_n=get_roots_2d(x_grid,y_grid,zcone_grid,xsp_grid)
 zx_points = np.concatenate([eqx,eqy],axis=0)
-print(zx_points)
-plt.plot(zx_points[:,0],zx_points[:,1],'b.')
+#print(zx_points)
+plt.plot(eqx[:,0],eqx[:,1],'r.')
+plt.plot(eqy[:,0],eqy[:,1],'r.')
+#plt.plot(zx_points[:,0],zx_points[:,1],'k.')
 #plt.show()
-plt.plot(x_grid[table].reshape(-1),y_grid[table].reshape(-1),'c.')
-plt.show()
+#plt.plot(x_grid[table_p].reshape(-1),y_grid[table_p].reshape(-1),'b.')
+#plt.plot(x_grid[table_n].reshape(-1),y_grid[table_n].reshape(-1),'r.')
+#plt.show()
 
-eqx,eqy,table=get_roots_2d(x_grid,y_grid,zcone_grid,tilted_grid)
+eqx,eqy,table_p,table_n=get_roots_2d(x_grid,y_grid,zcone_grid,tilted_grid)
 zt_points = np.concatenate([eqx,eqy],axis=0)
-print(zt_points)
-plt.plot(zt_points[:,0],zt_points[:,1],'y.')
+#print(zx_points)
+plt.plot(eqx[:,0],eqx[:,1],'g.')
+plt.plot(eqy[:,0],eqy[:,1],'g.')
+#plt.plot(zx_points[:,0],zx_points[:,1],'k.')
 #plt.show()
-plt.plot(x_grid[table].reshape(-1),y_grid[table].reshape(-1),'.')
-plt.show()
+#plt.plot(x_grid[table_p].reshape(-1),y_grid[table_p].reshape(-1),'b.')
+#plt.plot(x_grid[table_n].reshape(-1),y_grid[table_n].reshape(-1),'r.')
+#plt.show()
 
-eqx,eqy,table=get_roots_2d(x_grid,y_grid,tilted_grid,xsp_grid)
+eqx,eqy,table_p,table_n=get_roots_2d(x_grid,y_grid,tilted_grid,xsp_grid)
 tx_points = np.concatenate([eqx,eqy],axis=0)
-print(zt_points)
-plt.plot(tx_points[:,0],tx_points[:,1],'m.')
+#print(zx_points)
+plt.plot(eqx[:,0],eqx[:,1],'b.')
+plt.plot(eqy[:,0],eqy[:,1],'b.')
+#plt.plot(zx_points[:,0],zx_points[:,1],'k.')
 #plt.show()
-plt.plot(x_grid[table].reshape(-1),y_grid[table].reshape(-1),'.')
-plt.show()
+#plt.plot(x_grid[table_p].reshape(-1),y_grid[table_p].reshape(-1),'b.')
+#plt.plot(x_grid[table_n].reshape(-1),y_grid[table_n].reshape(-1),'r.')
+#plt.show()
 
 
 for ds in directory_skt:
@@ -201,9 +224,9 @@ for ds in directory_skt:
     states[2, state_type[1] == 'toron'] = 1
     states[2, state_type[2] == 'toron'] = 1
 
-    cone_x,cone_y,table=points(x.T,y.T,states[0].reshape(K.shape[0],K.shape[1]).T)
-    skyrmon_x,skyrmon_y,table=points(x.T,y.T,states[1].reshape(K.shape[0],K.shape[1]).T)
-    toron_x,toron_y,table = points(x.T, y.T, states[2].reshape(K.shape[0], K.shape[1]).T)
+    cone_x,cone_y,table_p,table_n=points(x.T,y.T,states[0].reshape(K.shape[0],K.shape[1]).T)
+    skyrmon_x,skyrmon_y,table_p,table_n=points(x.T,y.T,states[1].reshape(K.shape[0],K.shape[1]).T)
+    toron_x,toron_y,table_p,table_n = points(x.T, y.T, states[2].reshape(K.shape[0], K.shape[1]).T)
 #    plt.plot(cone_x[:, 0], cone_x[:, 1], 'k3')
 #    plt.plot(cone_y[:, 0], cone_y[:, 1], 'k3')
     plt.plot(skyrmon_x[:, 0], skyrmon_x[:, 1], 'r3')

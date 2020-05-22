@@ -8,7 +8,7 @@ import magnes
 import magnes.graphics
 from magnes.utils import state_reshape
 
-container = magnes.io.load('/home/ivan/LC_SK/spx/alt/7.5/best/matspx_-2.00000_7.50000.npz' )
+container = magnes.io.load('/home/ivan/LC_SK/spx/comp/st.npz')
 system=container.extract_system()
 primitives=system.primitives
 exchange=system.exchange
@@ -19,9 +19,9 @@ size=system.size
 print(f'{system.size = }')
 s = container["STATE"]
 s0=np.copy(s)
-for i in range(10):
+for i in range(13):
     s=np.concatenate([s,s0],axis=0)
-new_size=[446,99,20]
+new_size=[2860,1,20]
 s=magnes.utils.state_reshape(s,new_size,[0,0,0])
 print(f'{s.shape = }')
 system = magnes.System(primitives, representatives, new_size, bc)
@@ -31,7 +31,7 @@ s = state.download()
 container = magnes.io.container()
 container.store_system(system)
 container["STATE"] = s
-container.save('/home/ivan/LC_SK/initial.npz')
+container.save('/home/ivan/LC_SK/spx/comp/st.npz')
 '''
 fig,_,_=magnes.graphics.plot_field3D(system,state,slice2D='xy',sliceN=0)
 fig.savefig('fj_cut.pdf')

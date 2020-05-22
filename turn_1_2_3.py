@@ -40,10 +40,15 @@ def rotate(base2,result1,base1):
         return np.dot(R.from_rotvec(angle*cross/np.linalg.norm(cross)).as_matrix(),base2)
 
 
-base1='/home/ivan/LC_SK/initials/cone.npz'
-base2='/home/ivan/LC_SK/initial.npz'
+base1='/home/ivan/LC_SK/cone.npz'
+base2='/home/ivan/LC_SK/big_cone.npz'
 result1='/home/ivan/LC_SK/initials/skyrmion.npz'
-result2='/home/ivan/LC_SK/test.npz'
+result2='/home/ivan/LC_SK/test2.npz'
+
+#base1='/home/ivan/LC_SK/initials/cone.npz'
+#base2='/home/ivan/LC_SK/initials/zferr.npz'
+#result1='/home/ivan/LC_SK/initials/skyrmion.npz'
+#result2='/home/ivan/LC_SK/diff.npz'
 
 K1=-2.
 K2=7.5

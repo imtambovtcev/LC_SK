@@ -18,7 +18,7 @@ import map_file_manager as mfm
 import map_color as mc
 from scipy.interpolate import CubicSpline
 from pathlib import Path
-
+from scipy.signal import savgol_filter
 
 
 font = {'family' : 'sans-serif',
@@ -53,11 +53,8 @@ def point_plot(directory,x_all,y_all,z_all,point,name,show=False):
         px = y[axisn, np.invert(np.isnan(z1))]
         py = z1[np.invert(np.isnan(z1))]
         if len(py) > 1:
-            int = np.poly1d(np.polyfit(px, py, 5))
-            ipx = np.linspace(px.min(), 50, num=100, endpoint=True)
-            ipy = int(ipx)
-
-            plt.plot(ipx, ipy,label=n)
+            yhat = savgol_filter((px, py), 11, 3)
+            plt.plot(yhat[0], yhat[1],label=n)
     plt.xlabel('$K_{surf}/D^2$', fontsize=16)
     plt.ylabel('xperiod', fontsize=16)
     plt.legend()
@@ -97,9 +94,8 @@ def point_plot(directory,x_all,y_all,z_all,point,name,show=False):
         py = z2[np.invert(np.isnan(z2))]
         if len(py) > 1:
             int = np.poly1d(np.polyfit(px, py, 2))
-            ipx = np.linspace(-0.3, px.max(), num=100, endpoint=True)
-            ipy = int(ipx)
-            plt.plot(ipx, ipy,label=n)
+            yhat = savgol_filter((px, py), 7, 3)
+            plt.plot(yhat[0], yhat[1], label=n)
     plt.xlabel('$K_{bulk}/D^2$', fontsize=16)
     plt.ylabel('xperiod', fontsize=16)
     plt.legend()
@@ -146,16 +142,24 @@ directory = ['/home/ivan/LC_SK/spx/mat_cone/', '/home/ivan/LC_SK/spx/spx_map/bes
 result_directory = '/home/ivan/LC_SK/spx/mat_map/'
 mode='best'
 '''
-
+'''
 directory = ['/home/ivan/LC_SK/spx/alt/10/cone/', '/home/ivan/LC_SK/spx/alt/10/best/']
 result_directory = '/home/ivan/LC_SK/spx/alt/10/best/result/'
 mode='best'
-
 '''
+
 #'/home/ivan/LC_SK/spx/spx_bulk_1/best/',
+'''
 directory = [ '/home/ivan/LC_SK/spx/spx_surf_10/best/',
               '/home/ivan/LC_SK/spx/spx_surf_20/best/', '/home/ivan/LC_SK/spx/spx_surf_40/best/']
 result_directory = '/home/ivan/LC_SK/spx/spx_surf_result/'
+mode='compare'
+point = np.array([0., 0.])
+'''
+'''
+directory = [ '/home/ivan/LC_SK/spx/spx_bulk_1/best/','/home/ivan/LC_SK/spx/spx_bulk_10/best/',
+              '/home/ivan/LC_SK/spx/spx_bulk_20/best/','/home/ivan/LC_SK/spx/spx_bulk_40/best/']
+result_directory = '/home/ivan/LC_SK/spx/spx_bulk_result/'
 mode='compare'
 point = np.array([0., 0.])
 '''
@@ -313,5 +317,3 @@ elif mode=='skt':
     plt.xlabel('$K_{bulk}/D^2$', fontsize=16)
     plt.ylabel('$K_{surf}/D^2$', fontsize=16)
     plt.savefig(result_directory + 'Best_points.pdf')
-    if show: plt.show()
-    plt.close('all')

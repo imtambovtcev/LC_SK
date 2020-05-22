@@ -55,9 +55,11 @@ point=np.array([0,0])
 
 directory_skt = [['/home/ivan/LC_SK/skt/cone/', '/home/ivan/LC_SK/skt/skyrmion/', '/home/ivan/LC_SK/skt/toron/']]
 
-directory_best = [['/home/ivan/LC_SK/spx/small_spx/cone/', '/home/ivan/LC_SK/spx/small_spx/best/'],['/home/ivan/LC_SK/spx/small_spx_2/cone/', '/home/ivan/LC_SK/spx/small_spx_2/best/']]
+directory_best = [['/home/ivan/LC_SK/spx/alt/merge/cone/','/home/ivan/LC_SK/spx/alt/merge/best/']]
 result_directory = '/home/ivan/LC_SK/result/'
 
+xlimits=[-3,0]
+ylimits=[0,30]
 
 localisation_criteria = 100
 
@@ -123,6 +125,10 @@ plt.xlim([x.min(), x.max()])
 plt.ylim([y.min(), y.max()])
 plt.xlabel('$K_{bulk}/D^2$', fontsize=16)
 plt.ylabel('$K_{surf}/D^2$', fontsize=16)
+if xlimits:
+    plt.xlim(xlimits)
+if ylimits:
+    plt.ylim(ylimits)
 plt.savefig(result_directory + 'Best_points.pdf')
 plt.savefig(result_directory + 'Best_points.eps')
 if show: plt.show()

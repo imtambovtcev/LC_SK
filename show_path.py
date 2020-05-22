@@ -34,7 +34,7 @@ for file_from_list in filelist:
     state = system.field3D()
     for ct,i in enumerate(path_np):
         state.upload(i)
-        fig, _, _ = magnes.graphics.plot_field3D(system, state, slice2D='xz', sliceN=int(i.shape[0] / 2))
+        fig, _, _ = magnes.graphics.plot_field3D(system, state, slice2D='xz', sliceN=int(i.shape[1] / 2))
         fig.savefig(directory+result_directory+str(ct)+'_xz.pdf', bbox_inches='tight')
         plt.close('all')
         energy.append(state.energy_contributions_sum()['total'])
