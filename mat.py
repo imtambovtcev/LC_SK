@@ -13,6 +13,8 @@ import map_info
 import scipy.interpolate
 from pathlib import Path
 
+from termcolor import colored
+
 def change_shape(state,xsize):
     size0 = list(state.shape)
     ini = np.zeros([xsize, size0[1], size0[2], 1, 3])
@@ -282,24 +284,45 @@ def next_point(energy,n0,N,z0):
     print(f'{n = }\t{energy[0,0] = }\t{energy[-1, 0] = }')
     return energy.tolist(),pb,n,period,ref,nnan_energy, wrong_energy
 
+def get_reference(K,K_list,revese=False):
+    ref = list(K_list)
+    ref=sorted(ref, key= lambda x: np.abs(x[:2]-K).tolist())
+    if revese:
+        ref = [i for i in ref if K[0] <= i[0]]
+    else:
+        ref = [i for i in ref if K[0] >= i[0]]
+    ref = [ i for i in ref if i[0] == ref[0][0] and i[1] == ref[0][1] ]
+    return ref
+
 if __name__ == "__main__":
-    initial = Path('/home/ivan/LC_SK/initials/matspx10_1_20.npz')
-    directory = Path('/home/ivan/LC_SK/spx/5/')
+    initial = Path('/home/ivan/LC_SK/spx/alt/merge/best/matspx_-0.20000_5.00000.npz')
+    directory = Path('/home/ivan/LC_SK/spx/alt_small/')
     state_name = 'matspx'
 
     if not os.path.exists(directory):
         os.makedirs(directory)
-
     ###############
     N=10
     n0 = 5
-    z0 = 0.25
+    z0 = 25
+    revese=False
     ###########
+
+    Klist,Kaxis = mfm.file_manager(directory,
+                             params={'double': False,
+                                     'add': [np.round(np.linspace(-0.2, 0.0,21), decimals=5).tolist(),
+                                            np.round(np.linspace(0.0, 10.,6), decimals=5).tolist()]
+                                     },dimension=2
+                             )
+
+    Klist = np.array(sorted(Klist.tolist(),key=lambda x: [-x[1],x[0]], reverse=False))
 
     if len([f for f in os.listdir(directory) if Path(f).suffix=='.npz'])==0:
         energy = []
-        Kbulk= 0.0
-        Ksurf = 0.
+        Kbulk= Klist[0,0]
+        Ksurf = Klist[0,1]
+        print(colored('initial', 'green'))
+        print(colored('K_bulk = {}\tK_surf = {}\n\n'.format(Kbulk,Ksurf), 'blue'))
         container = magnes.io.load(str(initial))
         ini = container["STATE"]
         period = ini.shape[0]/N
@@ -322,31 +345,14 @@ if __name__ == "__main__":
             energy, pb,n, period, ref,nnan_energy, wrong_energy = next_point(energy,n0,N,z0)
         #period_plot(energy, Kbulk, Ksurf, pb)
 
-    Klist,Kaxis = mfm.file_manager(directory,
-                             params={'double': False,
-                                     'add': [np.round(np.linspace(0.0, -0.5,11), decimals=5).tolist(),
-                                            np.round(np.linspace(5,5, 1), decimals=5).tolist()]
-                                     },dimension=2
-                             )
-    if len(Klist>0):
-        if len(Kaxis[0])>1 and len(Kaxis[1])>1:
-            scale=np.array([np.abs(Klist)[:, 1].max(), np.abs(Klist)[:, 0].max()])
-        else:
-            scale=1.
-        Klist=Klist[np.array(sorted(list(enumerate(Klist)),
-                              key=lambda x: np.linalg.norm(x[1] * scale)))[:, 0].tolist()]
     for idx,Kv in enumerate(Klist,start=1):
         complete,_ = mfm.content(directory)
         Kbulk = Kv[0]
         Ksurf = Kv[1]
-        print(f'\n\n\n\n{Kbulk = }\t{Ksurf = }\n\n\n\n')
-        bulk_idx=np.where(Kaxis[0]==Kbulk)[0][0]
-        surf_idx = np.where(Kaxis[1] == Ksurf)[0][0]
-        if bulk_idx<len(Kaxis[0])-1:
-            initial = [i for i in complete if i[0]==Kaxis[0][bulk_idx+1] and i[1]==Kaxis[1][surf_idx]]
-        else:
-            initial = [i for i in complete if i[0] == Kaxis[0][bulk_idx] and i[1] == Kaxis[1][surf_idx-1]]
-        initial=sorted(initial,key = lambda x : x[2] )
+        print(colored('\n\nK_bulk = {}\tK_surf = {}\n\n'.format(Kbulk,Ksurf), 'blue'))
+
+        initial = get_reference(Kv,complete,revese)
+        initial = sorted(initial,key = lambda x : x[2] )
 
         energy=[]
         for i in initial:
