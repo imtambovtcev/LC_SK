@@ -130,7 +130,7 @@ def check_state(type, energy):
 
 show=False
 
-point=np.array([0,10])
+point=np.array([0,0])
 
 '''
 directory = ['/home/ivan/LC_SK/skt/cone/', '/home/ivan/LC_SK/skt/skyrmion/', '/home/ivan/LC_SK/skt/toron/']
@@ -142,11 +142,11 @@ directory = ['/home/ivan/LC_SK/spx/mat_cone/', '/home/ivan/LC_SK/spx/spx_map/bes
 result_directory = '/home/ivan/LC_SK/spx/mat_map/'
 mode='best'
 '''
-'''
-directory = ['/home/ivan/LC_SK/spx/alt/10/cone/', '/home/ivan/LC_SK/spx/alt/10/best/']
-result_directory = '/home/ivan/LC_SK/spx/alt/10/best/result/'
+
+directory = ['/home/ivan/LC_SK/spx/alt/merge/cone/', '/home/ivan/LC_SK/spx/alt/merge/best/']
+result_directory = '/home/ivan/LC_SK/spx/alt/merge/best/result/'
 mode='best'
-'''
+
 
 #'/home/ivan/LC_SK/spx/spx_bulk_1/best/',
 '''
