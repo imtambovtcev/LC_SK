@@ -9,8 +9,8 @@ import magnes.graphics
 from magnes.utils import state_reshape
 import show
 
-load='/home/ivan/LC_SK/spx/comp/st.npz'
-save='/home/ivan/LC_SK/spx/comp/st_9900.npz'
+load='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/comp/t_9900.npz'
+save='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/comp/t_9900_100.npz'
 container = magnes.io.load(load)
 system=container.extract_system()
 primitives=system.primitives
@@ -22,11 +22,11 @@ size=system.size
 print(f'{system.size = }')
 s = container["STATE"]
 
-#new_size=[225,1,20]
-#s=magnes.utils.state_reshape(s,new_size,[0,0,0])
+new_size=[100,1,20]
+s=magnes.utils.state_reshape(s,new_size,[0,0,0])
 
 s0=np.copy(s)
-for i in range(44):
+for i in range(0):
     s=np.concatenate([s,s0],axis=0)
 #new_size=[33,1,20]
 #s=magnes.utils.state_reshape(s,new_size,[-107,0,0])

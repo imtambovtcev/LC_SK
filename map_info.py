@@ -9,6 +9,7 @@ from pathlib import Path
 from shutil import copyfile
 import map_file_manager as mfm
 from scipy.interpolate import CubicSpline
+import utilities
 
 font = {'family' : 'sans-serif',
         'size'   : 16}
@@ -172,18 +173,7 @@ def map_info(directory,var={}):
             except:()
             try:            mean_x_centre_abs_projection_angle[idx] = np.arccos(mean_x_centre_abs_projection[idx])*360/(2*np.pi)
             except:()
-            try:
-                qm = s[:, int(system.size[1] / 2), int(system.size[2] / 2) - 3, 0, 1]
-                qp = s[:, int(system.size[1] / 2), int(system.size[2] / 2) + 3, 0, 1]
-                sp_qm = CubicSpline(range(len(qm)), qm)
-                sp_qp = CubicSpline(range(len(qp)), qp)
-                roots_qm = sp_qm.derivative().roots().tolist()
-                roots_qp = sp_qp.derivative().roots().tolist()
-                roots_qm = np.array(
-                    [i for i in roots_qm if i >= 0 and sp_qm(i) > 0.8 * qm.max() and sp_qm(i) < 1.2 * qm.max()])
-                roots_qp = np.array(
-                    [i for i in roots_qp if i >= 0 and sp_qp(i) > 0.8 * qp.max() and sp_qp(i) < 1.2 * qp.max()])
-                angle[idx] = np.abs(np.arctan(6/(roots_qm[2] - roots_qp[2]))*360/(2*np.pi))
+            try:            angle[idx] = utilities.get_angle(s)
             except:()
             try:            mean_z_abs_projection[idx] = np.sum(np.abs(np.dot(s, np.array([0., 0., 1.])))) / (s.size/3)
             except:()
