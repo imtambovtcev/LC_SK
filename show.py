@@ -53,6 +53,8 @@ def show(directory):
 				fig, _, _ = magnes.graphics.plot_field3D(system, state, slice2D='xy', sliceN=int(system.size[2] / 2))
 				fig.savefig(directory[:-4] + 'xy.pdf', bbox_inches='tight')
 				plt.close('all')
+				plt.plot(s[:,int(s.shape[1]/2),int(s.shape[2]/2),0,2])
+				plt.show()
 			except:
 				print('failed')
 

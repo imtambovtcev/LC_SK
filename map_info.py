@@ -136,6 +136,7 @@ def map_info(directory,var={}):
     angle = np.full(K.shape[0], np.nan)
     energy_if_xsp = np.full(K.shape[0], np.nan)
     xperiod = np.full(K.shape[0], np.nan)
+    x_tilted_period = np.full(K.shape[0], np.nan)
 
     t0=time.time()
     for idx,Kv in enumerate(K):
@@ -181,6 +182,8 @@ def map_info(directory,var={}):
             except:()
             try:            xperiod[idx] =s.shape[0]/10
             except:()
+            try:            x_tilted_period=xperiod[idx]*np.cos(angle[idx]*np.pi/180)
+            except:()
             try:
                 if local[idx]<100:
                     if abs(centre_charge[idx])<0.3 and abs(border_charge[idx])<0.3 and border_turn[idx]<20:
@@ -217,7 +220,7 @@ def map_info(directory,var={}):
              mean_z_abs_projection=mean_z_abs_projection,mean_z_centre_abs_projection=mean_z_centre_abs_projection,
              mean_x_centre_abs_projection=mean_x_centre_abs_projection,
              mean_x_centre_abs_projection_angle=mean_x_centre_abs_projection_angle,angle=angle,
-             energy_if_xsp=energy_if_xsp,xperiod=xperiod,
+             energy_if_xsp=energy_if_xsp,xperiod=xperiod,x_tilted_period =x_tilted_period,
              allow_pickle=True)
     structurize(directory,var)
 
