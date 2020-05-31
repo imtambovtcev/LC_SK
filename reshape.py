@@ -8,9 +8,10 @@ import magnes
 import magnes.graphics
 from magnes.utils import state_reshape
 import show
+import change_anisotropy
 
-load='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/comp/t_9900.npz'
-save='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/comp/t_9900_100.npz'
+load='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/comp/t.npz'
+save='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/comp/t_44.npz'
 container = magnes.io.load(load)
 system=container.extract_system()
 primitives=system.primitives
@@ -22,7 +23,7 @@ size=system.size
 print(f'{system.size = }')
 s = container["STATE"]
 
-new_size=[100,1,20]
+new_size=[44,1,20]
 s=magnes.utils.state_reshape(s,new_size,[0,0,0])
 
 s0=np.copy(s)
@@ -41,7 +42,10 @@ container = magnes.io.container()
 container.store_system(system)
 container["STATE"] = s
 container.save(save)
+change_anisotropy.change_anisotropy(save,save,-0.1,5)
 show.show(save)
+
+
 
 '''
 fig,_,_=magnes.graphics.plot_field3D(system,state,slice2D='xy',sliceN=0)
