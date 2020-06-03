@@ -101,7 +101,7 @@ def plot_map(x,y,z,file,name,show=False,cmap='terrain'):
     if show: plt.show()
     plt.close('all')
 
-def point_plot(file,x,y,z,point,show=False,plot_z_projection=False,state_name=False):
+def point_plot(file,x,y,z,point,show=False,plot_z_projection=True,state_name=False):
     point_column = np.argmin(np.linalg.norm(x - point[0], axis=1))
     point_row = np.argmin(np.linalg.norm(y - point[1], axis=0))
     print('Point = ', x[point_column][0], y[:, point_row][0])
@@ -164,7 +164,7 @@ def point_plot(file,x,y,z,point,show=False,plot_z_projection=False,state_name=Fa
                state_name=state_name, show=False)
         plot_z_projection = False
 
-def plot_cut(x_ini,y_ini,z_ini,directory,name,n=-1,show=False,cmap='terrain'):
+def plot_cut(x_ini,y_ini,z_ini,directory,name,n=5,show=False,cmap='terrain'):
     name = str(name)
     if n == -1:
         n0=1
@@ -227,7 +227,7 @@ def plot_cut(x_ini,y_ini,z_ini,directory,name,n=-1,show=False,cmap='terrain'):
 
 
 localisation_criteria = 100
-def map_color(directory,show=False, point=None,plot_z_projection=False):
+def map_color(directory,show=False, point=None,plot_z_projection=True):
     data = np.load(directory +'info/map_info_structurized.npz', allow_pickle=True)
 
     K = data['K']

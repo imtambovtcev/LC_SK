@@ -83,4 +83,4 @@ def change_anisotropy(file,save,K1,K2):
 
 
 if __name__ == "__main__":
-    change_anisotropy(sys.argv[1],sys.argv[2],float(sys.argv[3]),float(sys.argv[4]))
+    change_anisotropy(sys.argv[1],sys.argv[2],np.tan(np.pi / 10)**2*float(sys.argv[3]),np.tan(np.pi / 10)**2*float(sys.argv[4]))

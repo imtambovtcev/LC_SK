@@ -10,8 +10,8 @@ from magnes.utils import state_reshape
 import show
 import change_anisotropy
 
-load='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/comp/t.npz'
-save='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/comp/t_44.npz'
+load='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/view/matspx_-0.60000_0.00000.npz'
+save='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/view/matspx_-0.60000_0.00000.npz'
 container = magnes.io.load(load)
 system=container.extract_system()
 primitives=system.primitives
@@ -23,7 +23,7 @@ size=system.size
 print(f'{system.size = }')
 s = container["STATE"]
 
-new_size=[44,1,20]
+new_size=[25,1,20]
 s=magnes.utils.state_reshape(s,new_size,[0,0,0])
 
 s0=np.copy(s)

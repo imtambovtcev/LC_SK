@@ -326,8 +326,8 @@ if __name__ == "__main__":
 
     Klist,Kaxis = mfm.file_manager(directory,
                              params={'double': False,
-                                     'add': [np.round(np.linspace(0, -0.20,21), decimals=5).tolist(),
-                                            np.round(np.linspace(0, 10.0,21), decimals=5).tolist()]
+                                     'add': [np.round(np.linspace(0, -0.20,41), decimals=5).tolist(),
+                                            np.round(np.linspace(0, 10.0,41), decimals=5).tolist()]
                                      },dimension=2
                              )
 
@@ -335,10 +335,10 @@ if __name__ == "__main__":
 
     if len([f for f in os.listdir(directory) if Path(f).suffix=='.npz'])==0:
         energy = []
-        Kbulk= Klist[0,0]
-        Ksurf = Klist[0,1]
+        Kbulk_D= Klist[0,0]
+        Ksurf_D = Klist[0,1]
         print(colored('initial', 'green'))
-        print(colored('K_bulk = {}\tK_surf = {}\n\n'.format(Kbulk,Ksurf), 'blue'))
+        print(colored('K_bulk = {}\tK_surf = {}\n\n'.format(Kbulk_D,Ksurf_D), 'blue'))
         container = magnes.io.load(str(initial))
         ini = container["STATE"]
         period = ini.shape[0]/period_N
@@ -346,26 +346,26 @@ if __name__ == "__main__":
         energy.append([period, *minimize(directory=Path(''),
                                          load_file=initial,
                                          save_file=os.path.join(str(directory),state_name +
-                                                                '_{:.5f}_{:.5f}_{:.5f}.npz'.format(Kbulk, Ksurf, period)),
-                                         Kbulk=Kbulk * (np.tan(np.pi / 10)) ** 2,
-                                         Ksurf=Ksurf * (np.tan(np.pi / 10)) ** 2,z_max_proj=z_max_proj)])
+                                                                '_{:.5f}_{:.5f}_{:.5f}.npz'.format(Kbulk_D, Ksurf_D, period)),
+                                         Kbulk=np.power(np.tan(np.pi / 10) , 2)*Kbulk_D,
+                                         Ksurf=np.power(np.tan(np.pi / 10) , 2)*Ksurf_D,z_max_proj=z_max_proj)])
         energy=np.array(energy)
         energy, pb,n, period, ref,nnan_energy, wrong_energy=next_point(energy,max_steps_from_minimum,period_N,z_max_proj)
         while period:
             #period_plot(energy, Kbulk, Ksurf, pb, wrong_energy)
             energy.append([period, *minimize(directory=directory,
-                                             load_file=state_name + '_{:.5f}_{:.5f}_{:.5f}.npz'.format(Kbulk, Ksurf,ref),
-                                             save_file=state_name + '_{:.5f}_{:.5f}_{:.5f}.npz'.format(Kbulk, Ksurf,period),
-                                             Kbulk=Kbulk * (np.tan(np.pi / 10)) ** 2,
-                                             Ksurf=Ksurf * (np.tan(np.pi / 10)) ** 2, z_max_proj=z_max_proj,reshape=int(period*period_N))])
+                                             load_file=state_name + '_{:.5f}_{:.5f}_{:.5f}.npz'.format(Kbulk_D, Ksurf_D,ref),
+                                             save_file=state_name + '_{:.5f}_{:.5f}_{:.5f}.npz'.format(Kbulk_D, Ksurf_D,period),
+                                             Kbulk=np.power(np.tan(np.pi / 10) , 2)*Kbulk_D,
+                                             Ksurf=np.power(np.tan(np.pi / 10) , 2)*Ksurf_D, z_max_proj=z_max_proj,reshape=int(period*period_N))])
             energy, pb,n, period, ref,nnan_energy, wrong_energy = next_point(energy,max_steps_from_minimum,period_N,z_max_proj)
         #period_plot(energy, Kbulk, Ksurf, pb)
 
     for idx,Kv in enumerate(Klist,start=1):
         complete,_ = mfm.content(directory)
-        Kbulk = Kv[0]
-        Ksurf = Kv[1]
-        print(colored('\n\nK_bulk = {}\tK_surf = {}\n\n'.format(Kbulk,Ksurf), 'blue'))
+        Kbulk_D = Kv[0]
+        Ksurf_D = Kv[1]
+        print(colored('\n\nK_bulk = {}\tK_surf = {}\n\n'.format(Kbulk_D,Ksurf_D), 'blue'))
 
         initial = get_reference(Kv,complete,reverse)
         initial = sorted(initial,key = lambda x : x[2] )
@@ -375,17 +375,17 @@ if __name__ == "__main__":
             period=i[2]
             energy.append([period,*minimize(directory=directory,
                                             load_file=state_name+'_{:.5f}_{:.5f}_{:.5f}.npz'.format(i[0],i[1],i[2]),
-                                            save_file=state_name+'_{:.5f}_{:.5f}_{:.5f}.npz'.format(Kbulk,Ksurf,period),
-                              Kbulk=Kbulk*(np.tan(np.pi/10))**2,Ksurf=Ksurf*(np.tan(np.pi/10))**2,z_max_proj=z_max_proj)])
+                                            save_file=state_name+'_{:.5f}_{:.5f}_{:.5f}.npz'.format(Kbulk_D,Ksurf_D,period),
+                              Kbulk=np.power(np.tan(np.pi / 10) , 2)*Kbulk_D,Ksurf=np.power(np.tan(np.pi / 10) , 2)*Ksurf_D,z_max_proj=z_max_proj)])
         energy, pb, n, period, ref, nnan_energy, wrong_energy = next_point(energy, max_steps_from_minimum, period_N, z_max_proj)
         #period_plot(energy,Kbulk,Ksurf,pb,wrong_energy)
         while period:
             #period_plot(energy, Kbulk, Ksurf, pb, wrong_energy)
             energy.append([period, *minimize(directory=directory,
-                                             load_file=state_name + '_{:.5f}_{:.5f}_{:.5f}.npz'.format(Kbulk, Ksurf,ref),
-                                             save_file=state_name + '_{:.5f}_{:.5f}_{:.5f}.npz'.format(Kbulk, Ksurf,period),
-                                             Kbulk=Kbulk * (np.tan(np.pi / 10)) ** 2,
-                                             Ksurf=Ksurf * (np.tan(np.pi / 10)) ** 2, z_max_proj=z_max_proj,reshape=int(period*period_N))])
+                                             load_file=state_name + '_{:.5f}_{:.5f}_{:.5f}.npz'.format(Kbulk_D, Ksurf_D,ref),
+                                             save_file=state_name + '_{:.5f}_{:.5f}_{:.5f}.npz'.format(Kbulk_D, Ksurf_D,period),
+                                             Kbulk=np.power(np.tan(np.pi / 10) , 2)*Kbulk_D,
+                                             Ksurf=np.power(np.tan(np.pi / 10) , 2)*Ksurf_D, z_max_proj=z_max_proj,reshape=int(period*period_N))])
             energy, pb,n, period, ref,nnan_energy, wrong_energy = next_point(energy,max_steps_from_minimum,period_N,z_max_proj)
         #period_plot(energy, Kbulk, Ksurf, pb)
         energy=np.array(energy)
@@ -398,6 +398,6 @@ if __name__ == "__main__":
             if np.abs(idx-n)>max_steps_from_minimum+2:
                 delete_list.append(i)
         for p,e,z in delete_list:
-            os.remove(os.path.join(str(directory),state_name + '_{:.5f}_{:.5f}_{:.5f}.npz'.format(Kbulk, Ksurf,p)))
+            os.remove(os.path.join(str(directory),state_name + '_{:.5f}_{:.5f}_{:.5f}.npz'.format(Kbulk_D, Ksurf_D,p)))
 
     map_info.map_info(directory)

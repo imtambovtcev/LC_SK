@@ -182,7 +182,7 @@ def map_info(directory,var={}):
             except:()
             try:            xperiod[idx] =s.shape[0]/10
             except:()
-            try:            x_tilted_period=xperiod[idx]*np.cos(angle[idx]*np.pi/180)
+            try:            x_tilted_period[idx]=xperiod[idx]*np.sin(angle[idx]*np.pi/180)
             except:()
             try:
                 if local[idx]<100:
