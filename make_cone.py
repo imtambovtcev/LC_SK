@@ -16,18 +16,17 @@ import map_color
 #ini = container["STATE"]
 
 #size = list(ini.shape[0:3])
-size=[199,1,1]
-save='/home/ivan/LC_SK/initials/matspx10_1_1.npz'
+size=[1,1,20]
+save='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/df.npz'
 Nz=size[2]
 primitives = [(1., 0., 0.), (0., 1., 0.), (0., 0., 1.)]
 representatives = [(0., 0., 0.)]
 bc=[magnes.BC.PERIODIC,magnes.BC.PERIODIC,magnes.BC.PERIODIC]
-K1=0
-K2=0
+K1=10
+K2=-0.2
 J=1.
 D=np.tan(np.pi/10)
-K1*=(D**2)
-K2 *= (D ** 2)
+
 
 system = magnes.System(primitives, representatives, size, bc)
 origin = magnes.Vertex(cell=[0, 0, 0])
@@ -37,11 +36,11 @@ system.add(magnes.Exchange(origin, magnes.Vertex([0, 0, 1]), J, [0., 0., D]))
 K = K1 * np.ones(Nz)
 K[0] = K1 + K2
 K[-1] = K1 + K2
-K = K.reshape(1, 1, Nz, 1)
+K =np.power(D,2)*K.reshape(1, 1, Nz, 1)
 system.add(magnes.Anisotropy(K))
 print(system)
 state = system.field3D()
-ini=magnes.utils.set_cone(system=system,direction=[1.,0.,0.],period=size[0]/10,cone = 0.0, phi0=np.pi/2)
+ini=magnes.utils.set_cone(system=system,direction=[0.,0.,1.],period=size[0],cone = -1., phi0=np.pi/2)
 state.upload(ini)
 state.satisfy_constrains()
 print(state.energy_contributions_sum())

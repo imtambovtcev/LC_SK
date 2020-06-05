@@ -311,7 +311,7 @@ def get_reference(K,K_list,reverse=False):
 
 if __name__ == "__main__":
     initial = Path('/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/initials/matspx10_1_alt_20.npz')
-    directory = Path('/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/alt_small')
+    directory = Path('/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/alt2')
     state_name = 'matspx'
 
     if not os.path.exists(directory):
@@ -320,14 +320,14 @@ if __name__ == "__main__":
     period_N=10
     max_steps_from_minimum = 5
     z_max_proj = 25
-    reverse=False # top left
-    #reverse = True
+    #reverse=False # top left
+    reverse = True
     ###########
 
     Klist,Kaxis = mfm.file_manager(directory,
                              params={'double': False,
-                                     'add': [np.round(np.linspace(0, -0.20,41), decimals=5).tolist(),
-                                            np.round(np.linspace(0, 10.0,41), decimals=5).tolist()]
+                                     'add': [np.round(np.linspace(0, -0.40,41), decimals=5).tolist(),
+                                            np.round(np.linspace(0, 20.0,41), decimals=5).tolist()]
                                      },dimension=2
                              )
 

@@ -18,8 +18,8 @@ file='/home/ivan/LC_SK/initials/cone2Ku0Ks5.npz'
 directory='/home/ivan/LC_SK/spx/mat2_cone/'
 state_name='cone'
 '''
-file='/home/ivan/LC_SK/initials/mat_cone.npz'
-directory='/home/ivan/LC_SK/spx/alt5/cone/'
+file='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/initials/zferr.npz'
+directory='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/spx_bulk_10/ferr/'
 state_name='cone'
 
 '''
@@ -53,12 +53,12 @@ representatives = [(0., 0., 0.)]
 bc=[magnes.BC.PERIODIC,magnes.BC.PERIODIC,magnes.BC.FREE]
 
 Klist,Kaxis=mfm.file_manager(directory,
-					   params={'source':'/home/ivan/LC_SK/spx/alt5/best/'})
+					   params={'source':'/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/spx_bulk_10/best/'})
 '''						   'double':False,
 							   'add': [np.round(np.linspace(0, 10, 1), decimals=6).tolist(),
                                              np.round(np.linspace(0, 20, 11), decimals=6).tolist()]})
 				'''
-#,
+
 for idx,Kv in enumerate(Klist,start=1):
 	system = magnes.System(primitives, representatives, size, bc)
 	origin = magnes.Vertex(cell=[0, 0, 0])
