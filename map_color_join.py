@@ -177,7 +177,8 @@ if not os.path.exists(result_directory):
 
 
 if mode=='compare':
-    data = [np.load(d + 'info/map_info_structurized.npz', allow_pickle=True) for d in directory]
+    directory=[Path(d) for d in directory]
+    data = [np.load(d.joinpath('info/map_info_structurized.npz'), allow_pickle=True) for d in directory]
     K = [df['K'] for df in data]
     xperiod=[df['xperiod'] for df in data]
     x = [Ki[:, :, 0] for Ki in K ]
@@ -187,6 +188,10 @@ if mode=='compare':
     epu=[df['energy_per_unit'] for df in data]
     point_plot(result_directory + 'epu', x, y, epu, point, name, show=False)
     #map_color.plot_cut(x,y,epu,result_directory,result_directory+'epu.pdf')
+    data_f = [np.load(d.parent.joinpath('ferr/info/map_info_structurized.npz'), allow_pickle=True) for d in directory]
+    epu_f = [df['energy_per_unit'] for df in data_f]
+    ed=[a-b for a,b in zip(epu,epu_f)]
+    point_plot(result_directory + 'epu_f', x, y, ed, point, name, show=False)
 
 if mode=='best':
     data = [np.load(d + 'info/map_info_structurized.npz', allow_pickle=True) for d in directory]

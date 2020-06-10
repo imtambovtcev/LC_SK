@@ -17,13 +17,14 @@ import map_color
 
 #size = list(ini.shape[0:3])
 size=[1,1,20]
-save='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/df.npz'
+save='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/cone/2.npz'
 Nz=size[2]
 primitives = [(1., 0., 0.), (0., 1., 0.), (0., 0., 1.)]
 representatives = [(0., 0., 0.)]
-bc=[magnes.BC.PERIODIC,magnes.BC.PERIODIC,magnes.BC.PERIODIC]
-K1=10
-K2=-0.2
+bc=[magnes.BC.PERIODIC,magnes.BC.PERIODIC,magnes.BC.FREE]
+
+K_bulk=0.0
+K_surf=10
 J=1.
 D=np.tan(np.pi/10)
 
@@ -33,14 +34,15 @@ origin = magnes.Vertex(cell=[0, 0, 0])
 system.add(magnes.Exchange(origin, magnes.Vertex([1, 0, 0]), J, [D, 0., 0.]))
 system.add(magnes.Exchange(origin, magnes.Vertex([0, 1, 0]), J, [0., D, 0.]))
 system.add(magnes.Exchange(origin, magnes.Vertex([0, 0, 1]), J, [0., 0., D]))
-K = K1 * np.ones(Nz)
-K[0] = K1 + K2
-K[-1] = K1 + K2
+system.add(magnes.Anisotropy(np.power(D,2)*K_bulk))
+K = np.zeros(Nz)
+K[0] = K_surf
+K[-1] = K_surf
 K =np.power(D,2)*K.reshape(1, 1, Nz, 1)
-system.add(magnes.Anisotropy(K))
+system.add(magnes.Anisotropy(K,axis=[1,0,0]))
 print(system)
 state = system.field3D()
-ini=magnes.utils.set_cone(system=system,direction=[0.,0.,1.],period=size[0],cone = -1., phi0=np.pi/2)
+ini=magnes.utils.set_cone(system=system,direction=[0.,0.,1.],period=size[2]/2,cone = 0, phi0=0)
 state.upload(ini)
 state.satisfy_constrains()
 print(state.energy_contributions_sum())

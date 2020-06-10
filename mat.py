@@ -254,7 +254,7 @@ def period_plot(energy,Kbulk, Ksurf,pb=None,wrong_energy=[]):
     plt.tight_layout()
     plt.show()
 
-def next_point(energy,max_steps_from_minimum,period_N,z_max_proj,max_period=200):
+def next_point(energy,max_steps_from_minimum,period_N,z_max_proj,max_period=np.infty):
     energy=np.array(sorted(np.array(energy).tolist(), key=lambda x: x[0]))
     wl=energy[:,2]>z_max_proj
     wrong_energy=energy[wl]
@@ -310,24 +310,24 @@ def get_reference(K,K_list,reverse=False):
     return ref
 
 if __name__ == "__main__":
-    initial = Path('/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/initials/matspx10_1_alt_20.npz')
-    directory = Path('/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/alt2')
+    initial = Path('/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/initials/xsp/20/1.npz')
+    directory = Path('/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/xsp_map')
     state_name = 'matspx'
 
     if not os.path.exists(directory):
         os.makedirs(directory)
     ###############
-    period_N=10
+    period_N=1
     max_steps_from_minimum = 5
-    z_max_proj = 25
+    z_max_proj = 0.25
     #reverse=False # top left
     reverse = True
     ###########
 
     Klist,Kaxis = mfm.file_manager(directory,
                              params={'double': False,
-                                     'add': [np.round(np.linspace(0, -0.40,41), decimals=5).tolist(),
-                                            np.round(np.linspace(0, 20.0,41), decimals=5).tolist()]
+                                     'add': [np.round(np.linspace(0, -1,21), decimals=5).tolist(),
+                                            np.round(np.linspace(0, 20,41), decimals=5).tolist()]
                                      },dimension=2
                              )
 

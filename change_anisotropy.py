@@ -12,7 +12,7 @@ import map_info
 import map_color
 from pathlib import Path
 
-def change_anisotropy(file,save,K1,K2):
+def change_anisotropy(file,save,K_bulk,K_surf):
     if os.path.isdir(file):
         for f in os.listdir(file):
             container = magnes.io.load(file+f)
@@ -32,9 +32,9 @@ def change_anisotropy(file,save,K1,K2):
             system.add(magnes.Exchange(origin, magnes.Vertex([1, 0, 0]), J, [D, 0., 0.]))
             system.add(magnes.Exchange(origin, magnes.Vertex([0, 1, 0]), J, [0., D, 0.]))
             system.add(magnes.Exchange(origin, magnes.Vertex([0, 0, 1]), J, [0., 0., D]))
-            K = K1 * np.ones(Nz)
-            K[0] = K1 + K2
-            K[-1] = K1 + K2
+            K = K_bulk * np.ones(Nz)
+            K[0] = K_bulk + K_surf
+            K[-1] = K_bulk + K_surf
             K = K.reshape(1, 1, Nz, 1)
             system.add(magnes.Anisotropy(K))
             print(system)
@@ -64,9 +64,9 @@ def change_anisotropy(file,save,K1,K2):
         system.add(magnes.Exchange(origin, magnes.Vertex([1, 0, 0]), J, [D, 0., 0.]))
         system.add(magnes.Exchange(origin, magnes.Vertex([0, 1, 0]), J, [0., D, 0.]))
         system.add(magnes.Exchange(origin, magnes.Vertex([0, 0, 1]), J, [0., 0., D]))
-        K = K1 * np.ones(Nz)
-        K[0] = K1 + K2
-        K[-1] = K1 + K2
+        K = K_bulk * np.ones(Nz)
+        K[0] = K_bulk + K_surf
+        K[-1] = K_bulk + K_surf
         K = K.reshape(1, 1, Nz, 1)
         system.add(magnes.Anisotropy(K))
         print(system)
