@@ -152,12 +152,13 @@ mode='best'
 
 #'/home/ivan/LC_SK/spx/spx_bulk_1/best/',
 
+'''
 directory = [ '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/spx_surf_10/best/',
               '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/spx_surf_20/best/', '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/spx_surf_40/best/']
 result_directory = '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/spx_surf_result/'
 mode='compare'
 point = np.array([0., 0.])
-
+'''
 '''
 directory = [ '/home/ivan/LC_SK/spx/spx_bulk_1/best/','/home/ivan/LC_SK/spx/spx_bulk_10/best/',
               '/home/ivan/LC_SK/spx/spx_bulk_20/best/','/home/ivan/LC_SK/spx/spx_bulk_40/best/']
@@ -165,6 +166,12 @@ result_directory = '/home/ivan/LC_SK/spx/spx_bulk_result/'
 mode='compare'
 point = np.array([0., 0.])
 '''
+
+directory = [ '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/cone/cone_2_map/',
+              '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/cone/cone_3_map/']
+result_directory = '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/cone/cone_result/'
+mode='compare'
+point = np.array([0.55, 100])
 
 localisation_criteria = 100
 
@@ -188,10 +195,12 @@ if mode=='compare':
     epu=[df['energy_per_unit'] for df in data]
     point_plot(result_directory + 'epu', x, y, epu, point, name, show=False)
     #map_color.plot_cut(x,y,epu,result_directory,result_directory+'epu.pdf')
-    data_f = [np.load(d.parent.joinpath('ferr/info/map_info_structurized.npz'), allow_pickle=True) for d in directory]
-    epu_f = [df['energy_per_unit'] for df in data_f]
-    ed=[a-b for a,b in zip(epu,epu_f)]
-    point_plot(result_directory + 'epu_f', x, y, ed, point, name, show=False)
+    if np.all(np.array([d.parent.joinpath('ferr/info/map_info_structurized.npz').is_file() for d in directory])):
+        data_f = [np.load(d.parent.joinpath('ferr/info/map_info_structurized.npz'), allow_pickle=True) for d in directory]
+        epu_f = [df['energy_per_unit'] for df in data_f]
+        ed=[a-b for a,b in zip(epu,epu_f)]
+        point_plot(result_directory + 'epu_f', x, y, ed, point, name, show=False)
+    #xperiod = [df['xperiod'] for df in data]
 
 if mode=='best':
     data = [np.load(d + 'info/map_info_structurized.npz', allow_pickle=True) for d in directory]

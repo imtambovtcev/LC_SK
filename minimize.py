@@ -49,7 +49,7 @@ def change_shape(state,xsize):
     return ini
 
 
-def one_minimize(directory,load_file,save_file,Kbulk,Ksurf,reshape=None):
+def minimize_from_file(directory,load_file,save_file,J=1.,D=np.tan(np.pi/10),Kbulk=0,Ksurf=0,reshape=None):
     directory=Path(directory)
     load_file=Path(load_file)
     save_file=Path(save_file)
@@ -63,9 +63,6 @@ def one_minimize(directory,load_file,save_file,Kbulk,Ksurf,reshape=None):
     primitives = [(1., 0., 0.), (0., 1., 0.), (0., 0., 1.)]
     representatives = [(0., 0., 0.)]
     bc=[magnes.BC.PERIODIC,magnes.BC.PERIODIC,magnes.BC.FREE]
-
-    J=1.
-    D=np.tan(np.pi/10)
 
     system = magnes.System(primitives, representatives, size, bc)
     origin = magnes.Vertex(cell=[0, 0, 0])
@@ -117,88 +114,6 @@ def one_minimize(directory,load_file,save_file,Kbulk,Ksurf,reshape=None):
     #container["ENERGY"] =state.energy_contributions_sum()['total']
     container.save(os.path.join(directory,save_file))
     return state.energy_contributions_sum()['total']/(s.shape[0]*s.shape[1]*s.shape[2]),np.mean(np.abs(s[:,:,2:-2,0,0]))
-
-
-def two_minimize(directory,load_file,save_file,Kbulk,Ksurf,reshape=None):
-    container = magnes.io.load(directory+load_file)
-    ini = container["STATE"]
-    if reshape:
-        ini=change_shape(ini,reshape)
-    size=list(ini.shape)[:3]
-
-    Nz=ini.shape[2]
-    primitives = [(1., 0., 0.), (0., 1., 0.), (0., 0., 1.)]
-    representatives = [(0., 0., 0.)]
-    bc=[magnes.BC.PERIODIC,magnes.BC.PERIODIC,magnes.BC.FREE]
-
-    J=1.
-    D=np.tan(np.pi/10)
-
-    system = magnes.System(primitives, representatives, size, bc)
-    origin = magnes.Vertex(cell=[0, 0, 0])
-    system.add(magnes.Exchange(origin, magnes.Vertex([1, 0, 0]), J, [D, 0., 0.]))
-    system.add(magnes.Exchange(origin, magnes.Vertex([0, 1, 0]), J, [0., D, 0.]))
-    system.add(magnes.Exchange(origin, magnes.Vertex([0, 0, 1]), J, [0., 0., D]))
-    K = Kbulk * np.ones(Nz)
-    K[0] = Kbulk + Ksurf
-    K[-1] = Kbulk + Ksurf
-    K = K.reshape(1, 1, Nz, 1)
-    system.add(magnes.Anisotropy(K))
-    state = system.field3D()
-    state.upload(ini)
-    state.satisfy_constrains()
-    #fig, _, _ = magnes.graphics.plot_field3D(system, state, slice2D='xz', sliceN=int(system.size[1] / 2))
-    #plt.show()
-    maxtime = 1000
-    alpha = 0.1
-    precision = 5e-5
-    catcher = magnes.EveryNthCatcher(1000)
-
-    reporters = [magnes.TextStateReporter()]#,magnes.graphics.VectorStateReporter3D(slice2D='xz',sliceN=0)]
-
-    '''mask = np.ones(size+[1])
-    mask[4::int(size[0]/20),:,2:-2,0]=0
-    freeze_mask = system.field1D().upload(mask)
-    minimizer = magnes.StateGDwM(system,freeze=freeze_mask, reference=None, stepsize=alpha, maxiter=None,
-                                maxtime=maxtime, precision=precision, catcher=catcher,
-                                reporter=magnes.MultiReporter(reporters))#,speedup=1)
-
-    minimizer.optimize(state)
-
-    mask = np.ones(size + [1])
-    mask[:, :, int(size[2]/2), 0] = 0
-    freeze_mask = system.field1D().upload(mask)
-    minimizer = magnes.StateGDwM(system, freeze=freeze_mask, reference=None, stepsize=alpha, maxiter=None,
-                                 maxtime=maxtime, precision=precision, catcher=catcher,
-                                 reporter=magnes.MultiReporter(reporters))  # ,speedup=1)
-
-    minimizer.optimize(state)'''
-    minimizer=magnes.StateNCG(system, reference=None, stepsize=alpha, maxiter=None, maxtime=200, precision=precision,
-                              reporter=magnes.MultiReporter(reporters), catcher=catcher)
-    minimizer.optimize(state)
-    s = state.download()
-    print(f'{np.mean(np.abs(s[:,:,:,0,0])) = }')
-    container = magnes.io.container()
-    container.store_system(system)
-    container["STATE"] = s
-    #container["ENERGY"] =state.energy_contributions_sum()['total']
-    container.save(directory+save_file)
-    return state.energy_contributions_sum()['total']/(s.shape[0]*s.shape[1]*s.shape[2]),np.mean(np.abs(s[:,:,2:-2,0,0]))
-
-
-def minimize(directory,load_file,save_file,Kbulk,Ksurf,reshape=None,z_max_proj=0.25):
-    ans=one_minimize(directory,load_file,save_file,Kbulk,Ksurf,reshape)
-    print(f'{ans[1] = }')
-    if ans[1]<z_max_proj:
-        print('success1')
-        return ans
-    print('fail')
-    one_minimize(directory,load_file,save_file,0.,0.,reshape)
-    ans= one_minimize(directory, save_file, save_file, Kbulk, Ksurf)
-    if ans[1]<z_max_proj:
-        print('success2')
-        return ans
-    return ans
 
 def parabola(x, a, b, c):
     return a*x**2 + b*x + c
@@ -344,7 +259,7 @@ if __name__ == "__main__":
         ini = container["STATE"]
         period = ini.shape[0]/period_N
         print(f'{period = }')
-        energy.append([period, *minimize(directory=Path(''),
+        energy.append([period, *minimize_from_file(directory=Path(''),
                                          load_file=initial,
                                          save_file=os.path.join(str(directory),state_name +
                                                                 '_{:.5f}_{:.5f}_{:.5f}.npz'.format(Kbulk_D, Ksurf_D, period)),
@@ -354,7 +269,7 @@ if __name__ == "__main__":
         energy, pb,n, period, ref,nnan_energy, wrong_energy=next_point(energy,max_steps_from_minimum,period_N,z_max_proj)
         while period:
             #period_plot(energy, Kbulk, Ksurf, pb, wrong_energy)
-            energy.append([period, *minimize(directory=directory,
+            energy.append([period, *minimize_from_file(directory=directory,
                                              load_file=state_name + '_{:.5f}_{:.5f}_{:.5f}.npz'.format(Kbulk_D, Ksurf_D,ref),
                                              save_file=state_name + '_{:.5f}_{:.5f}_{:.5f}.npz'.format(Kbulk_D, Ksurf_D,period),
                                              Kbulk=np.power(np.tan(np.pi / 10) , 2)*Kbulk_D,
@@ -374,7 +289,7 @@ if __name__ == "__main__":
         energy=[]
         for i in initial:
             period=i[2]
-            energy.append([period,*minimize(directory=directory,
+            energy.append([period,*minimize_from_file(directory=directory,
                                             load_file=state_name+'_{:.5f}_{:.5f}_{:.5f}.npz'.format(i[0],i[1],i[2]),
                                             save_file=state_name+'_{:.5f}_{:.5f}_{:.5f}.npz'.format(Kbulk_D,Ksurf_D,period),
                               Kbulk=np.power(np.tan(np.pi / 10) , 2)*Kbulk_D,Ksurf=np.power(np.tan(np.pi / 10) , 2)*Ksurf_D,z_max_proj=z_max_proj)])

@@ -16,17 +16,17 @@ import map_color
 #ini = container["STATE"]
 
 #size = list(ini.shape[0:3])
-size=[1,1,20]
-save='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/cone/2.npz'
+size=[1,1,100]
+save='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/initials/cone_project/cone_2.npz'
 Nz=size[2]
 primitives = [(1., 0., 0.), (0., 1., 0.), (0., 0., 1.)]
 representatives = [(0., 0., 0.)]
 bc=[magnes.BC.PERIODIC,magnes.BC.PERIODIC,magnes.BC.FREE]
 
-K_bulk=0.0
-K_surf=10
+K_bulk=0.5
+K_surf=1.
 J=1.
-D=np.tan(np.pi/10)
+D=np.tan(2*np.pi/80)
 
 
 system = magnes.System(primitives, representatives, size, bc)
@@ -42,7 +42,7 @@ K =np.power(D,2)*K.reshape(1, 1, Nz, 1)
 system.add(magnes.Anisotropy(K,axis=[1,0,0]))
 print(system)
 state = system.field3D()
-ini=magnes.utils.set_cone(system=system,direction=[0.,0.,1.],period=size[2]/2,cone = 0, phi0=0)
+ini=magnes.utils.set_cone(system=system,direction=[0.,0.,1.],period=size[2],cone = 0.4, phi0=0)
 state.upload(ini)
 state.satisfy_constrains()
 print(state.energy_contributions_sum())
