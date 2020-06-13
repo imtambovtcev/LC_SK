@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import map_file_manager as mfm
 import map_info
 import map_color
+from minimize import *
 
 '''
 file='/home/ivan/LC_SK/initials/cone2Ku0Ks5.npz'
@@ -19,7 +20,7 @@ directory='/home/ivan/LC_SK/spx/mat2_cone/'
 state_name='cone'
 '''
 file='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/initials/zferr/zferr_20.npz'
-directory='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/xsp_map/ferr/'
+directory='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/xsp_map/test2/'
 state_name='ferr'
 
 '''
@@ -60,44 +61,12 @@ Klist,Kaxis=mfm.file_manager(directory,
 				'''
 
 for idx,Kv in enumerate(Klist,start=1):
-	system = magnes.System(primitives, representatives, size, bc)
-	origin = magnes.Vertex(cell=[0, 0, 0])
-	system.add(magnes.Exchange(origin, magnes.Vertex([1, 0, 0]), J, [D, 0., 0.]))
-	system.add(magnes.Exchange(origin, magnes.Vertex([0, 1, 0]), J, [0., D, 0.]))
-	system.add(magnes.Exchange(origin, magnes.Vertex([0, 0, 1]), J, [0., 0., D]))
-	K = Kv[0] * np.ones(Nz)
-	K[0] = (Kv[1]+Kv[0])
-	K[-1] = (Kv[1]+Kv[0])
-	K = np.power(D, 2)*K.reshape(1, 1, Nz, 1)
-	system.add(magnes.Anisotropy(K))
-
-	print(system)
-	state=system.field3D()
-	state.upload(ini)
-	state.satisfy_constrains()
-
-	plot=False
-	maxtime=6000
-	alpha=0.1
-	precision=5e-5
-	catcher=magnes.EveryNthCatcher(1000)
-	reporters=[magnes.TextStateReporter()]
-	if plot and system.number_of_spins<1000000:
-		reporters.append(magnes.graphics.GraphStateReporter())
-		reporters.append(magnes.graphics.VectorStateReporter3D(slice2D='xy',sliceN=int(Nz/2)))
-		reporters.append(magnes.graphics.VectorStateReporter3D(slice2D='xy',sliceN=0))
-		reporters.append(magnes.graphics.VectorStateReporter3D(slice2D='xz',sliceN=int(SZ/2)))
-	minimizer=magnes.StateNCG(system, reference=None, stepsize=alpha, maxiter=None, maxtime=200, precision=precision, reporter=magnes.MultiReporter(reporters), catcher=catcher)
-
-	minimizer.optimize(state)
-	s=state.download()
+	system,s,energy=minimize(ini=ini,J=J,D=D,Kbulk=np.power(D, 2)*Kv[0],Ksurf=np.power(D, 2)*Kv[1])
 	container = magnes.io.container()
 	container.store_system(system)
 	container["STATE"] = s
+	container['ENERGY']=energy
 	container.save(directory +state_name+ '_{:.5f}_{:.5f}.npz'.format(Kv[0], Kv[1]))
-	fig,_,_=magnes.graphics.plot_field3D(system,state,slice2D='xz',sliceN=int(SZ/2))
-	fig.savefig('state.pdf')
-	plt.close('all')
 
 map_info.map_info(directory)
 #map_color.map_color(directory)
