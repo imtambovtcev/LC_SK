@@ -6,7 +6,7 @@ import os.path
 import time
 from scipy.optimize import basinhopping
 
-import map_color
+import map_color as mc
 
 import matplotlib.pyplot as plt
 
@@ -15,7 +15,7 @@ from matplotlib.ticker import MaxNLocator
 import pandas as pd
 import matplotlib
 import map_file_manager as mfm
-import map_color as mc
+import map_color
 from scipy.interpolate import CubicSpline
 from pathlib import Path
 from scipy.signal import savgol_filter
@@ -167,9 +167,10 @@ mode='compare'
 point = np.array([0., 0.])
 '''
 
-directory = [ '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/cone/cone_2_map/',
-              '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/cone/cone_3_map/']
-result_directory = '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/cone/cone_result/'
+directory = [ '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/bulk_10/1/best',
+              '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/bulk_20/1/best',
+              '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/bulk_40/1/best']
+result_directory = '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/bulk_result/'
 mode='compare'
 point = np.array([0.55, 100])
 
@@ -201,6 +202,8 @@ if mode=='compare':
         ed=[a-b for a,b in zip(epu,epu_f)]
         point_plot(result_directory + 'epu_f', x, y, ed, point, name, show=False)
     #xperiod = [df['xperiod'] for df in data]
+    epu = [df['energy_per_unit'] for df in data]
+    #point_plot(result_directory + 'epu', x, y, epu, point, name, show=False)
 
 if mode=='best':
     data = [np.load(d + 'info/map_info_structurized.npz', allow_pickle=True) for d in directory]

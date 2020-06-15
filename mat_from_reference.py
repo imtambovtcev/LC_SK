@@ -16,8 +16,8 @@ from pathlib import Path
 from termcolor import colored
 from minimize import *
 
-initial = Path('/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/test')
-directory = Path('/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/test3')
+initial = Path('/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/bulk_10/1')
+directory = Path('/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/bulk_10/10')
 
 make_map_from_map(save_dir=directory,
                    ref_dir=initial,
