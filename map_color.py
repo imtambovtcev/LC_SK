@@ -70,7 +70,7 @@ def plot_z(x,y,point, directory, state_name,n=20,show=False):
             z = np.array(range(len(s)))
             plt.plot(z, s, c=cmap(int((len(ypoints)-1)*(y[0,yn]-y[0,ypoints].min())/(y[0,ypoints].max()-y[0,ypoints].min()))))
         except:
-            print(str(directory.joinpath(name + '_{:.5f}_{:.5f}.npz'.format(x[x0,0], y[0,yn]))) + '\tz surf fail')
+            print(str(directory.joinpath(name + '_{:.5f}_{:.5f}.npz'.format(x[x0,0], y[0,yn]))) + '\t z surf fail')
     # plt.rc('text', usetex=True)
     norm = matplotlib.colors.Normalize(vmin=y[0,ypoints].min(), vmax=y[0,ypoints].max())
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
@@ -311,6 +311,7 @@ def map_color(directory,show=False, point=None, plot_z_projection=True):
                 plot(x,y,epu,'Energy per unit',directory=directory,filename='epu',point=point,show=show,cmap=cmap)
                 if Path(directory).parent.joinpath('ferr').is_dir():
                     try:
+                        print('ferr found')
                         data_ferr = np.load(
                             str(Path(directory).parent.joinpath('ferr').joinpath('info/map_info_structurized.npz')),
                             allow_pickle=True)
@@ -321,6 +322,7 @@ def map_color(directory,show=False, point=None, plot_z_projection=True):
                         ()
                 if Path(directory).parent.joinpath('cone').is_dir():
                     try:
+                        print('cone found')
                         data_ferr = np.load(
                             str(Path(directory).parent.joinpath('cone').joinpath('info/map_info_structurized.npz')),
                             allow_pickle=True)

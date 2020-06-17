@@ -15,6 +15,13 @@ from pathlib import Path
 
 from termcolor import colored
 
+def blockPrint():
+    sys.stdout = open(os.devnull, 'w')
+
+# Restore
+def enablePrint():
+    sys.stdout = sys.__stdout__
+
 def change_shape(state,xsize):
     size0 = list(state.shape)
     ini = np.zeros([xsize, size0[1], size0[2], 1, 3])
@@ -82,7 +89,9 @@ def minimize(ini,J=1.,D=np.tan(np.pi/10),Kbulk=0.,Ksurf=0.):
     reporters = []  # [magnes.TextStateReporter()]#,magnes.graphics.VectorStateReporter3D(slice2D='xz',sliceN=0)]
     minimizer = magnes.StateNCG(system, reference=None, stepsize=alpha, maxiter=None, maxtime=200, precision=precision,
                                 reporter=magnes.MultiReporter(reporters), catcher=catcher)
+    blockPrint()
     minimizer.optimize(state)
+    enablePrint()
     return system,state.download(),state.energy_contributions_sum()['total']
 
 
@@ -162,9 +171,9 @@ def min_period(energy):
     return n,pb
 
 def gaps(points, period_N):
-    r=int(np.ceil(np.log10(period_N))+2)
+    r=int(np.ceil(np.log10(period_N))+3)
     points_r=np.round(points,r)
-    all=list(np.round(np.linspace(points_r.min(),points_r.max(),int((points_r.max()-points_r.min())*period_N)+1),r))
+    all=list(np.round(np.array(range(int(points_r.min()*period_N),int(points_r.max()*period_N)))/period_N,r))
     points_r=points_r.tolist()
     return np.array([i for i in all if not(i in points_r)])
 
@@ -178,49 +187,55 @@ def next_point(energy,max_steps_from_minimum,period_N,z_max_proj,max_period=np.i
     nnan_energy = energy[np.invert(np.isnan(energy[:, 1]))]
     n,pb=min_period(energy)
     print(f'{n = }')
-    if len(nnan_energy) > 0:
-        gap=gaps(energy[:,0],period_N=period_N)
-        if len(gap)>0:
-            period=gap[0]
-            ref = nnan_energy[np.argmin(np.abs(nnan_energy[:,0]-period)),0]
-            print('gap found')
-        else:
-            right = True
-            left = True
-
-            if np.nanmin(energy[:,0])<=2 or n-np.nanmin(nnan_energy[:,0])>max_steps_from_minimum/period_N or np.nanmin(nnan_energy[:,0])-np.nanmin(energy[:,0])>5*max_steps_from_minimum/period_N:
-                left = False
-            if np.nanmax(energy[:,0])>max_period or np.nanmax(nnan_energy[:,0])-n>max_steps_from_minimum/period_N or np.nanmax(energy[:,0])-np.nanmax(nnan_energy[:,0])>5*max_steps_from_minimum/period_N:
-                right=False
-
-            if left and right:
-                if pb[0]>0:
-                    if n-np.nanmax(nnan_energy[:,0])>np.nanmin(nnan_energy[:,0])-n:
-                        right=False
-                    else:
-                        left=False
-                else:
-                    if n-np.nanmax(nnan_energy[:,0])>np.nanmin(nnan_energy[:,0])-n:
-                        left=False
-                    else:
-                        right=False
-
-            if left and not right:
-                period = np.round(np.nanmin(energy[:, 0]) - 1 / period_N, 5)
-                ref = np.nanmin(nnan_energy[:, 0])
-            elif not left and right:
-                period = np.round(np.nanmax(energy[:, 0]) + 1 / period_N, 5)
-                ref = np.nanmax(nnan_energy[:, 0])
-            elif not(left or right):
-                period = None
-                ref = None
-            else:
-                print('lr error')
-                period = None
-                ref = None
+    gap = gaps(energy[:, 0], period_N=period_N)
+    if len(gap) > 0:
+        period = gap[0]
+        ref = nnan_energy[np.argmin(np.abs(nnan_energy[:, 0] - period)), 0]
+        print('gap found')
     else:
-        period = np.round(np.nanmax(energy[:, 0]) + 1 / period_N, 5)
-        ref = np.nanmax(energy[:, 0])
+        if len(nnan_energy) == 0 and len(energy)<10:
+            period = np.round(np.nanmax(energy[:, 0]) + 1 / period_N, 5)
+            ref = np.nanmax(energy[:, 0])
+        elif len(energy) > len(nnan_energy)*10:
+            period = None
+            ref = None
+        else:
+                right = True
+                left = True
+
+                if np.nanmin(energy[:,0])<=2 or n-np.nanmin(nnan_energy[:,0])>max_steps_from_minimum/period_N or \
+                        np.nanmin(nnan_energy[:,0])-np.nanmin(energy[:,0])>5*max_steps_from_minimum/period_N:
+                    left = False
+                if np.nanmax(energy[:,0])>max_period or \
+                        np.nanmax(nnan_energy[:,0])-n>max_steps_from_minimum/period_N or \
+                        np.nanmax(energy[:,0])-np.nanmax(nnan_energy[:,0])>5*max_steps_from_minimum/period_N:
+                    right=False
+
+                if left and right:
+                    if pb[0]>0:
+                        if n-np.nanmax(nnan_energy[:,0])>np.nanmin(nnan_energy[:,0])-n:
+                            right=False
+                        else:
+                            left=False
+                    else:
+                        if n-np.nanmax(nnan_energy[:,0])>np.nanmin(nnan_energy[:,0])-n:
+                            left=False
+                        else:
+                            right=False
+
+                if left and not right:
+                    period = np.round(np.nanmin(energy[:, 0]) - 1 / period_N, 5)
+                    ref = np.nanmin(nnan_energy[:, 0])
+                elif not left and right:
+                    period = np.round(np.nanmax(energy[:, 0]) + 1 / period_N, 5)
+                    ref = np.nanmax(nnan_energy[:, 0])
+                elif not(left or right):
+                    period = None
+                    ref = None
+                else:
+                    print('lr error')
+                    period = None
+                    ref = None
 
     print(f'{n = }\t{period = }\t{ref = }\t{energy[0,0] = }\t{energy[-1, 0] = }')
     return energy.tolist(),pb,n,period,ref,nnan_energy, wrong_energy

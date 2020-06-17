@@ -16,8 +16,11 @@ from pathlib import Path
 from termcolor import colored
 from minimize import *
 
-initial = Path('/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/bulk_10/1')
-directory = Path('/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/bulk_10/10')
+initial = Path('/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/40_bulk/1')
+directory = Path('/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/40_bulk/10')
+
+print(f'{initial = }')
+print(f'{directory = }')
 
 make_map_from_map(save_dir=directory,
                    ref_dir=initial,
@@ -25,7 +28,7 @@ make_map_from_map(save_dir=directory,
                    period_N=10,
                    max_steps_from_minimum=5,
                    z_max_proj=0.25,
-                   reverse=True,
-                   max_period=np.infty)
+                   reverse=False,
+                   max_period=500)
 
 map_info.map_info(directory)

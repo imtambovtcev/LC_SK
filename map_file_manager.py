@@ -22,6 +22,7 @@ def content(directory,dimension=None):
                 K[i,j]=float(str.split(filelist[i].stem, '_')[j+1])
         assert np.all(state_name == state_name[0])
         state_name = state_name[0]
+        K=np.array(sorted(K.tolist()))
         return K,state_name
     else:
         return np.array([]),'void'

@@ -10,8 +10,8 @@ from magnes.utils import state_reshape
 import show
 import change_anisotropy
 
-load='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/comp/t_44.npz'
-save='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/comp/t_22.npz'
+load='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/comp/st_44.npz'
+save='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/comp/st_22.npz'
 container = magnes.io.load(load)
 system=container.extract_system()
 primitives=system.primitives

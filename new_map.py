@@ -13,15 +13,16 @@ import map_file_manager as mfm
 import map_info
 import map_color
 from minimize import *
+from pathlib import Path
 
 '''
 file='/home/ivan/LC_SK/initials/cone2Ku0Ks5.npz'
 directory='/home/ivan/LC_SK/spx/mat2_cone/'
 state_name='cone'
 '''
-file='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/initials/zferr/zferr_20.npz'
-directory='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/xsp_map/test2/'
-state_name='ferr'
+file=Path('/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/initials/cone/cone1/40.npz')
+directory=Path('/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/alt_40_surf/cone/')
+state_name='cone'
 
 '''
 file='/home/ivan/LC_SK/initials/cone.npz'
@@ -40,7 +41,7 @@ state_name='skyrmion'
 if not os.path.exists(directory):
     os.makedirs(directory)
 
-container = magnes.io.load(file)
+container = magnes.io.load(str(file))
 ini = container["STATE"]
 
 J=1.0;D=np.tan(np.pi/10)
@@ -54,10 +55,10 @@ representatives = [(0., 0., 0.)]
 bc=[magnes.BC.PERIODIC,magnes.BC.PERIODIC,magnes.BC.FREE]
 
 Klist,Kaxis=mfm.file_manager(directory,
-					   params={'source':'/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/xsp_map/best/'})
+					   params={'source':'/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/alt_40_surf/1/best'})
 '''						   'double':False,
 							   'add': [np.round(np.linspace(0, 10, 1), decimals=6).tolist(),
-                                             np.round(np.linspace(0, 20, 11), decimals=6).tolist()]})
+                                             np.round(np.linspace(0, 40, 11), decimals=6).tolist()]})
 				'''
 
 for idx,Kv in enumerate(Klist,start=1):
@@ -66,7 +67,7 @@ for idx,Kv in enumerate(Klist,start=1):
 	container.store_system(system)
 	container["STATE"] = s
 	container['ENERGY']=energy
-	container.save(directory +state_name+ '_{:.5f}_{:.5f}.npz'.format(Kv[0], Kv[1]))
+	container.save(str(directory.joinpath(state_name+ '_{:.5f}_{:.5f}.npz'.format(Kv[0], Kv[1]))))
 
 map_info.map_info(directory)
 #map_color.map_color(directory)

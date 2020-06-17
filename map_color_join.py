@@ -28,7 +28,7 @@ font = {'family' : 'sans-serif',
 matplotlib.rc('font', **font)
 cmap='viridis'
 
-def point_plot(directory,x_all,y_all,z_all,point,name,show=False):
+def point_plot(directory,x_all,y_all,z_all,point,name,ylabel='Period',show=False):
     for x,y,z,n in zip(x_all,y_all,z_all,name):
         point_column = np.argmin(np.linalg.norm(x - point[0], axis=1))
         point_row = np.argmin(np.linalg.norm(y - point[1], axis=0))
@@ -40,7 +40,7 @@ def point_plot(directory,x_all,y_all,z_all,point,name,show=False):
         if len(py) > 1:
             plt.plot(px, py, '.',label=n)
     plt.xlabel('$K_{surf}/D^2$', fontsize=16)
-    plt.ylabel('xperiod', fontsize=16)
+    plt.ylabel(ylabel, fontsize=16)
     plt.legend()
     plt.tight_layout()
     plt.savefig(directory + '_surf.pdf')
@@ -55,10 +55,13 @@ def point_plot(directory,x_all,y_all,z_all,point,name,show=False):
         px = y[axisn, np.invert(np.isnan(z1))]
         py = z1[np.invert(np.isnan(z1))]
         if len(py) > 1:
-            yhat = savgol_filter((px, py), 11, 3)
-            plt.plot(yhat[0], yhat[1],label=n)
+            try:
+                yhat = savgol_filter((px, py), 11, 3)
+                plt.plot(yhat[0], yhat[1],label=n)
+            except:
+                plt.plot(px, py, label=n)
     plt.xlabel('$K_{surf}/D^2$', fontsize=16)
-    plt.ylabel('xperiod', fontsize=16)
+    plt.ylabel(ylabel, fontsize=16)
     plt.legend()
     plt.tight_layout()
     plt.savefig(directory+ '_pi_surf.pdf')
@@ -78,7 +81,7 @@ def point_plot(directory,x_all,y_all,z_all,point,name,show=False):
             plt.plot(px, py, '.',label=n)
 
     plt.xlabel('$K_{bulk}/D^2$', fontsize=16)
-    plt.ylabel('xperiod', fontsize=16)
+    plt.ylabel(ylabel, fontsize=16)
     plt.legend()
     plt.tight_layout()
     plt.savefig(directory + '_p_bulk.pdf')
@@ -99,7 +102,7 @@ def point_plot(directory,x_all,y_all,z_all,point,name,show=False):
             yhat = savgol_filter((px, py), 7, 3)
             plt.plot(yhat[0], yhat[1], label=n)
     plt.xlabel('$K_{bulk}/D^2$', fontsize=16)
-    plt.ylabel('xperiod', fontsize=16)
+    plt.ylabel(ylabel, fontsize=16)
     plt.legend()
     plt.tight_layout()
     plt.savefig(directory + '_pi_bulk.pdf')
@@ -167,12 +170,13 @@ mode='compare'
 point = np.array([0., 0.])
 '''
 
-directory = [ '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/bulk_10/1/best',
-              '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/bulk_20/1/best',
-              '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/bulk_40/1/best']
-result_directory = '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/bulk_result/'
+directory = [ '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/alt_10_surf/1/best',
+              '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/alt_20_surf/1/best',
+              '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/alt_40_surf/1/best']
+result_directory = '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/alt_surf_result/'
+name=['10','20','40']
 mode='compare'
-point = np.array([0.55, 100])
+point = np.array([0.0, 0.])
 
 localisation_criteria = 100
 
@@ -191,10 +195,11 @@ if mode=='compare':
     xperiod=[df['xperiod'] for df in data]
     x = [Ki[:, :, 0] for Ki in K ]
     y = [Ki[:, :, 1] for Ki in K]
-    name=[Path(i).parts[-2].split('_')[-1] for i in directory]
+    if name is None:
+        name=[Path(i).parts[-2].split('_')[-1] for i in directory]
     point_plot(result_directory + 'xperiod', x, y, xperiod, point,name, show=False)
     epu=[df['energy_per_unit'] for df in data]
-    point_plot(result_directory + 'epu', x, y, epu, point, name, show=False)
+    point_plot(result_directory + 'epu', x, y, epu, point, name,ylabel='Energy per unit', show=False)
     #map_color.plot_cut(x,y,epu,result_directory,result_directory+'epu.pdf')
     if np.all(np.array([d.parent.joinpath('ferr/info/map_info_structurized.npz').is_file() for d in directory])):
         data_f = [np.load(d.parent.joinpath('ferr/info/map_info_structurized.npz'), allow_pickle=True) for d in directory]
@@ -202,7 +207,12 @@ if mode=='compare':
         ed=[a-b for a,b in zip(epu,epu_f)]
         point_plot(result_directory + 'epu_f', x, y, ed, point, name, show=False)
     #xperiod = [df['xperiod'] for df in data]
-    epu = [df['energy_per_unit'] for df in data]
+    epu_c = [df['epu_from_cone'] for df in data]
+    point_plot(result_directory + 'epu_from_cone', x, y, epu_c, point, name,ylabel='epu_from_cone', show=False)
+    epu_f = [df['epu_from_ferr'] for df in data]
+    point_plot(result_directory + 'epu_from_ferr', x, y, epu_f, point, name,ylabel='epu_from_ferr', show=False)
+    z_mag = [df['mean_z_centre_abs_projection'] for df in data]
+    point_plot(result_directory + 'z_mag', x, y, z_mag, point, name, ylabel='$m_z$', show=False)
     #point_plot(result_directory + 'epu', x, y, epu, point, name, show=False)
 
 if mode=='best':

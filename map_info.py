@@ -25,13 +25,13 @@ def nannanargmin(energy):
 
 def get_best(directory):
     directory=Path(directory)
-    file = np.load(os.path.join(directory,'info/map_info_structurized.npz'), allow_pickle=True)
+    file = np.load(str(directory.joinpath('info/map_info_structurized.npz')), allow_pickle=True)
     K=file['K']
     energy=file['energy_per_unit']
     print(f'{energy.shape = }')
     best,mask=nannanargmin(energy)
-    if not os.path.exists(os.path.join(directory,'best/')):
-        os.makedirs(os.path.join(directory,'best/'))
+    if not os.path.exists(str(directory.joinpath('best/'))):
+        os.makedirs(str(directory.joinpath('best/')))
 
     xperiod = np.full([K.shape[0],K.shape[1]], np.nan)
     for ct0 in range(K.shape[0]):
@@ -39,14 +39,49 @@ def get_best(directory):
             if not np.isnan(best[ct0,ct1]):
                 old_filename=Path('{}_{:.5f}_{:.5f}_{:.5f}.npz'.format(str(file['state_name']),*K[ct0,ct1,int(best[ct0,ct1])]))
                 new_filename = Path('{}_{:.5f}_{:.5f}.npz'.format(str(file['state_name']), *(K[ct0, ct1, int(best[ct0, ct1])][:2])))
-                copyfile(os.path.join(directory,old_filename),os.path.join(directory,'best/',new_filename))
+                copyfile(str(directory.joinpath(old_filename)),str(directory.joinpath('best/').joinpath(new_filename)))
                 xperiod[ct0,ct1]=K[ct0,ct1,int(best[ct0,ct1])][2]
-    map_info(os.path.join(directory,'best/'),{'xperiod':xperiod})
+
+    map_info(str(directory.joinpath('best/')),{'xperiod':xperiod})
+
+
+def epu_from(directory):
+    directory=Path(directory)
+
+    data=np.load(str(directory.joinpath('info/map_info_structurized.npz')))
+    epu=data['energy_per_unit']
+    try:
+       if Path(directory).parent.joinpath('cone').is_dir():
+           data_cone = np.load(
+               str(Path(directory).parent.joinpath('cone').joinpath('info/map_info_structurized.npz')),
+               allow_pickle=True)
+       elif Path(directory).parent.parent.joinpath('cone').is_dir():
+           data_cone = np.load(
+               str(Path(directory).parent.parent.joinpath('cone').joinpath('info/map_info_structurized.npz')),
+               allow_pickle=True)
+       epu_cone = data_cone['energy_per_unit']
+    except:
+       epu_cone=np.nan
+    try:
+        if Path(directory).parent.joinpath('ferr').is_dir():
+            data_ferr = np.load(
+                str(Path(directory).parent.joinpath('ferr').joinpath('info/map_info_structurized.npz')),
+                allow_pickle=True)
+        elif Path(directory).parent.parent.joinpath('ferr').is_dir():
+            data_ferr = np.load(
+                str(Path(directory).parent.parent.joinpath('ferr').joinpath('info/map_info_structurized.npz')),
+                allow_pickle=True)   
+        epu_ferr = data_ferr['energy_per_unit']
+    except:
+       epu_ferr=np.nan
+
+    return (epu-epu_cone,epu-epu_ferr)
 
 
 
 def structurize(directory,var_add):
-    file = np.load(os.path.join(directory, 'info/map_info.npz'),allow_pickle=True)
+    directory=Path(directory)
+    file = np.load(str(directory.joinpath('info/map_info.npz')),allow_pickle=True)
     K=file['K']
     Klist=[sorted(list(dict.fromkeys(i.tolist()))) for i in K.T]
     Kshape = [len(i) for i in Klist]
@@ -87,11 +122,13 @@ def structurize(directory,var_add):
                             var[i][idx0,idx1,idx2] = file[i][idx]
 
     print(f'{full_K.shape = }')
-    np.savez(os.path.join(directory, 'info/map_info_structurized.npz'),K=full_K,**{**var0,**var,**var_add},allow_pickle=True)
+    np.savez(str(directory.joinpath('info/map_info_structurized.npz')),K=full_K,**{**var0,**var,**var_add},allow_pickle=True)
     if len(Klist)==3:
-        get_best(directory)
-
-
+        get_best(str(directory))
+    if len(Klist)==2:
+        epu_from_cone,epu_from_ferr=epu_from(str(directory))
+        var_add2={'epu_from_cone':epu_from_cone,'epu_from_ferr':epu_from_ferr}
+        np.savez(str(directory.joinpath('info/map_info_structurized.npz')),K=full_K,**{**var0,**var,**var_add,**var_add2},allow_pickle=True)
 
 
 def toplogical_charge(system,s,layer_n):
@@ -116,9 +153,10 @@ def localisation(state):
     return x0+x1+y0+y1
 
 def map_info(directory,var={}):
+    directory=Path(directory)
     os.environ['MAGNES_BACKEND'] = 'numpy'
     import magnes
-    K, state_name=mfm.content(directory)
+    K, state_name=mfm.content(str(directory))
 
     state_type=np.full(K.shape[0],np.nan,dtype=object)
     energy=np.full(K.shape[0],np.nan)
@@ -137,8 +175,24 @@ def map_info(directory,var={}):
     energy_if_xsp = np.full(K.shape[0], np.nan)
     xperiod = np.full(K.shape[0], np.nan)
     x_tilted_period = np.full(K.shape[0], np.nan)
-
+    epu_from_cone= np.full(K.shape[0], np.nan)
+    epu_from_ferr=np.full(K.shape[0], np.nan)
     t0=time.time()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     for idx,Kv in enumerate(K):
         filename=state_name
         for f in Kv:
@@ -180,10 +234,14 @@ def map_info(directory,var={}):
             except:()
             try:            local[idx]=localisation(s)
             except:()
-            try:            xperiod[idx] =s.shape[0]/10
+            try:            xperiod[idx] =s.shape[0]
             except:()
             try:            x_tilted_period[idx]=xperiod[idx]*np.sin(angle[idx]*np.pi/180)
             except:()
+            #try:            epu_from_cone[idx]=energy_per_unit[idx]-epu_cone[idx]
+            #except:()
+            #try:            epu_from_ferr[idx]=energy_per_unit[idx]-epu_ferr[idx]
+            #except:()
             try:
                 if local[idx]<100:
                     if abs(centre_charge[idx])<0.3 and abs(border_charge[idx])<0.3 and border_turn[idx]<20:
@@ -210,10 +268,10 @@ def map_info(directory,var={}):
             print('Running time {:.0f}s Estimated time {:.0f}s'.format(time.time() - t0,
                                                                        (time.time() - t0) * (K.shape[0] - (idx+1)) / (idx+1)))
 
-    if not os.path.exists(os.path.join(directory,'info/')):
-        os.makedirs(os.path.join(directory,'info/'))
+    if not os.path.exists(str(directory.joinpath('info/'))):
+        os.makedirs(str(directory.joinpath('info/')))
     print(f'{K.shape = },{energy_if_xsp.shape = }')
-    np.savez(os.path.join(directory,'info/map_info.npz'), K=K,
+    np.savez(str(directory.joinpath('info/map_info.npz')), K=K,
              energy=energy,energy_per_unit=energy_per_unit,state_type=state_type, state_name=state_name,
              localisation=local,centre_charge=centre_charge,border_charge=border_charge,border_turn=border_turn,
              mean_z_projection=mean_z_projection,mean_z_centre_projection=mean_z_centre_projection,
@@ -221,9 +279,10 @@ def map_info(directory,var={}):
              mean_x_centre_abs_projection=mean_x_centre_abs_projection,
              mean_x_centre_abs_projection_angle=mean_x_centre_abs_projection_angle,angle=angle,
              energy_if_xsp=energy_if_xsp,xperiod=xperiod,x_tilted_period =x_tilted_period,
+             epu_from_cone=epu_from_cone,epu_from_ferr=epu_from_ferr,
              allow_pickle=True)
-    structurize(directory,var)
+    structurize(str(directory),var)
 
 if __name__ == "__main__":
-    directory = Path('./') if len(sys.argv) <= 1 else sys.argv[1]
+    directory = Path('./') if len(sys.argv) <= 1 else Path(sys.argv[1])
     map_info(directory)
