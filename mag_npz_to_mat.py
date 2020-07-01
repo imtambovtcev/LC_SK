@@ -9,6 +9,9 @@ def convert(filename):
     assert filename[-4:]=='.npz'
     container = magnes.io.load(filename)
     s = container["STATE"]
+    if s.shape[1]==1:
+        s=np.concatenate([s,s],axis=1)
+    print(s.shape)
     s=np.squeeze(s)
     assert np.all(np.abs(np.linalg.norm(s, axis=3) - 1 < 0.01))
     print(f'{s.shape = }')

@@ -118,6 +118,7 @@ def rect_plot(x,y,z,cmap='terrain'):
 def plot_map(x,y,z,directory,name,show=False,cmap='terrain'):
     if np.all(np.array(z.shape) > 1):
         rect_plot(x, y, z)
+        print(str(directory.joinpath('info').joinpath(name+ '_r.pdf')))
         plt.savefig(str(directory.joinpath('info').joinpath(name+ '_r.pdf')))
         if show: plt.show()
         plt.close('all')

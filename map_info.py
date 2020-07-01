@@ -74,8 +74,15 @@ def epu_from(directory):
         epu_ferr = data_ferr['energy_per_unit']
     except:
        epu_ferr=np.nan
-
-    return (epu-epu_cone,epu-epu_ferr)
+    try:
+        epu_from_cone= epu-epu_cone
+    except:
+        epu_from_cone=np.nan
+    try:
+        epu_from_ferr= epu-epu_ferr
+    except:
+        epu_from_ferr=np.nan
+    return (epu_from_cone,epu_from_ferr)
 
 
 

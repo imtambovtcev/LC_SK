@@ -37,7 +37,9 @@ def convert(filename,dubilcate=0,y_size=0,save=True):
         s1=np.copy(s)
         for i in range(dubilcate):
             s1=np.concatenate([s1,s],axis=0)
-    s[:,:,:,:,2]=-s[:,:,:,:,2]
+    #s[:,:,:,:,0]=-s[:,:,:,:,0]
+    s[:, :, :, :, 1] = -s[:, :, :, :, 1]
+    #s[:, :, :, :, 2] = -s[:, :, :, :, 2]
     size=list(s_norm.shape)
     primitives = [(1., 0., 0.), (0., 1., 0.), (0., 0., 1.)]
     representatives = [(0., 0., 0.)]

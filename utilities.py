@@ -12,4 +12,5 @@ def get_angle(s):
         [i for i in roots_qm if i >= 0 and sp_qm(i) > 0.8 * qm.max() and sp_qm(i) < 1.2 * qm.max()])
     roots_qp = np.array(
         [i for i in roots_qp if i >= 0 and sp_qp(i) > 0.8 * qp.max() and sp_qp(i) < 1.2 * qp.max()])
-    return np.abs(np.arctan(6/(roots_qm[2] - roots_qp[2]))*360/(2*np.pi))
+    idx = 0 if len(roots_qm)==1 else 1 if len(roots_qm)==2 else 2
+    return np.abs(np.arctan(6/(roots_qm[idx] - roots_qp[idx]))*360/(2*np.pi))

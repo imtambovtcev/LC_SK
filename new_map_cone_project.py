@@ -14,7 +14,7 @@ import map_info
 import map_color
 
 file='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/initials/cone_project/cone_2.npz'
-directory='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/cone/cone_2_map/'
+directory='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/cone/30/cone_2_map/'
 state_name='cone'
 
 
@@ -24,7 +24,7 @@ if not os.path.exists(directory):
 container = magnes.io.load(file)
 ini = container["STATE"]
 
-J=1.0;D=np.tan(2*np.pi/80)
+J=1.0;D=np.tan(np.pi/30)
 
 size=ini.shape[0:3]
 print(size)
@@ -35,7 +35,8 @@ representatives = [(0., 0., 0.)]
 bc=[magnes.BC.PERIODIC,magnes.BC.PERIODIC,magnes.BC.FREE]
 
 Klist,Kaxis=mfm.file_manager(directory,
-					   params={'double':False, 'add': [np.round(np.linspace(0, 1, 41), decimals=6).tolist(), np.round(np.linspace(0, 100, 11), decimals=6).tolist()]})
+					   params={'double':False, 'add': [np.round(np.linspace(0, 1, 21), decimals=6).tolist(),
+													   np.round(np.linspace(0, 100, 11), decimals=6).tolist()]})
 
 #'source':'/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/xsp_map/best/'})
 
@@ -75,9 +76,6 @@ for idx,Kv in enumerate(Klist,start=1):
 	container.store_system(system)
 	container["STATE"] = s
 	container.save(directory +state_name+ '_{:.5f}_{:.5f}.npz'.format(Kv[0], Kv[1]))
-	fig,_,_=magnes.graphics.plot_field3D(system,state,slice2D='xz',sliceN=int(SZ/2))
-	fig.savefig('state.pdf')
-	plt.close('all')
 
 map_info.map_info(directory)
 #map_color.map_color(directory)

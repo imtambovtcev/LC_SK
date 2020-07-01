@@ -20,8 +20,8 @@ file='/home/ivan/LC_SK/initials/cone2Ku0Ks5.npz'
 directory='/home/ivan/LC_SK/spx/mat2_cone/'
 state_name='cone'
 '''
-file=Path('/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/initials/cone/cone1/40.npz')
-directory=Path('/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/alt_40_surf/cone/')
+file=Path('/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/initials/cone/cone1/20.npz')
+directory=Path('/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/alt_20/cone/')
 state_name='cone'
 
 '''
@@ -55,7 +55,7 @@ representatives = [(0., 0., 0.)]
 bc=[magnes.BC.PERIODIC,magnes.BC.PERIODIC,magnes.BC.FREE]
 
 Klist,Kaxis=mfm.file_manager(directory,
-					   params={'source':'/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/alt_40_surf/1/best'})
+					   params={'source':'/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/alt_20/1/best'})
 '''						   'double':False,
 							   'add': [np.round(np.linspace(0, 10, 1), decimals=6).tolist(),
                                              np.round(np.linspace(0, 40, 11), decimals=6).tolist()]})

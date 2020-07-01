@@ -147,11 +147,11 @@ directory = ['/home/ivan/LC_SK/spx/mat_cone/', '/home/ivan/LC_SK/spx/spx_map/bes
 result_directory = '/home/ivan/LC_SK/spx/mat_map/'
 mode='best'
 '''
-'''
-directory = ['/home/ivan/LC_SK/spx/alt/merge/cone/', '/home/ivan/LC_SK/spx/alt/merge/best/']
-result_directory = '/home/ivan/LC_SK/spx/alt/merge/best/result/'
+
+directory = ['/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/20/cone/', '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/20/1/best/']
+result_directory = '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/20_results'
 mode='best'
-'''
+
 
 #'/home/ivan/LC_SK/spx/spx_bulk_1/best/',
 
@@ -169,7 +169,7 @@ result_directory = '/home/ivan/LC_SK/spx/spx_bulk_result/'
 mode='compare'
 point = np.array([0., 0.])
 '''
-
+'''
 directory = [ '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/alt_10_surf/1/best',
               '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/alt_20_surf/1/best',
               '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/alt_40_surf/1/best']
@@ -177,6 +177,17 @@ result_directory = '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new
 name=['10','20','40']
 mode='compare'
 point = np.array([0.0, 0.])
+'''
+
+'''
+directory = [ '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/20_surf/10/best',
+              '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/20_from_mat/10/best']
+result_directory = '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/mat_result/'
+name=['npz','mat']
+mode='compare'
+point = np.array([0.0, 0.])
+'''
+
 
 localisation_criteria = 100
 
@@ -216,7 +227,13 @@ if mode=='compare':
     #point_plot(result_directory + 'epu', x, y, epu, point, name, show=False)
 
 if mode=='best':
-    data = [np.load(d + 'info/map_info_structurized.npz', allow_pickle=True) for d in directory]
+    directory = [Path(d) for d in directory]
+    result_directory=Path(result_directory)
+    if not result_directory.is_dir():
+        os.mkdir(result_directory)
+    if not result_directory.joinpath('info').is_dir():
+        os.mkdir(result_directory.joinpath('info'))
+    data = [np.load(str(d.joinpath('info/map_info_structurized.npz')), allow_pickle=True) for d in directory]
     K = [df['K'] for df in data]
     assert np.all(np.array_equal(x, K[0]) for x in K)
     K = K[0]
@@ -224,15 +241,14 @@ if mode=='best':
     x = K[:,:, 0]
     y = K[:,:, 1]
 
-
     energy_diff=epu[1]-epu[0]
     energy_diff[np.isnan(energy_diff)]=2*np.nanmax(energy_diff)
 
-    mc.plot_map(x,y,energy_diff,file=result_directory + 'epu_diff',name='Epu from cone')
+    mc.plot_map(x,y,energy_diff,directory=result_directory,name= 'epu_diff')
 
     min_state = np.nanargmin(epu, axis=0)
     mc.rect_plot(x, y, min_state)
-    plt.savefig(result_directory + 'Best.pdf')
+    plt.savefig(result_directory.joinpath('Best.pdf'))
     if show: plt.show()
     plt.close('all')
 
@@ -246,7 +262,7 @@ if mode=='best':
         plt.ylim([y.min(), y.max()])
         plt.xlabel('$K_{bulk}/D^2$', fontsize=16)
         plt.ylabel('$K_{surf}/D^2$', fontsize=16)
-        plt.savefig(result_directory + 'Best_points.pdf')
+        plt.savefig(result_directory.joinpath('Best_points.pdf'))
         if show: plt.show()
         plt.close('all')
         print(f'{eqx = }')
@@ -254,7 +270,7 @@ if mode=='best':
 
     min_state = (((epu[0]-epu[1])/np.abs(epu[0]))>0.02).astype('int')
     mc.rect_plot(x, y, min_state)
-    plt.savefig(result_directory + 'Bestpm.pdf')
+    plt.savefig(result_directory.joinpath('Bestpm.pdf'))
     if show: plt.show()
     plt.close('all')
 
@@ -274,7 +290,7 @@ if mode=='best':
         plt.ylabel('$Energy$', fontsize=16)
         plt.legend()
         plt.tight_layout()
-        plt.savefig(result_directory + '/Energy_pu_s.pdf')
+        plt.savefig(result_directory.joinpath('Energy_pu_s.pdf'))
         if show: plt.show()
         plt.close('all')
 
@@ -286,7 +302,7 @@ if mode=='best':
         plt.xlabel('$K_{surf}/D^2$', fontsize=16)
         plt.ylabel('$Energy$', fontsize=16)
         plt.tight_layout()
-        plt.savefig(result_directory + '/Energy_diff_pu_s.pdf')
+        plt.savefig(result_directory.joinpath('Energy_diff_pu_s.pdf'))
         if show: plt.show()
         plt.close('all')
 
@@ -299,7 +315,7 @@ if mode=='best':
         plt.xlabel('$K_{bulk}/D^2$', fontsize=16)
         plt.ylabel('$Energy$', fontsize=16)
         plt.tight_layout()
-        plt.savefig(result_directory + '/Energy_pu_n.pdf')
+        plt.savefig(result_directory.joinpath('Energy_pu_n.pdf'))
         if show: plt.show()
         plt.close('all')
 
@@ -310,7 +326,7 @@ if mode=='best':
         plt.ylabel('$Energy$', fontsize=16)
         plt.legend()
         plt.tight_layout()
-        plt.savefig(result_directory + '/Energy_diff_pu_n.pdf')
+        plt.savefig(result_directory.joinpath('Energy_diff_pu_n.pdf'))
         if show: plt.show()
         plt.close('all')
 
