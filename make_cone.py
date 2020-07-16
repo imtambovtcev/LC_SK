@@ -17,7 +17,7 @@ import map_color
 
 #size = list(ini.shape[0:3])
 size=[1,1,100]
-save='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/initials/cone_project/cone_2.npz'
+save='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/cone/cone_3_t.npz'
 Nz=size[2]
 primitives = [(1., 0., 0.), (0., 1., 0.), (0., 0., 1.)]
 representatives = [(0., 0., 0.)]
@@ -42,14 +42,14 @@ K =np.power(D,2)*K.reshape(1, 1, Nz, 1)
 system.add(magnes.Anisotropy(K,axis=[1,0,0]))
 print(system)
 state = system.field3D()
-ini=magnes.utils.set_cone(system=system,direction=[0.,0.,1.],period=size[2],cone = 0.4, phi0=0)
+ini=magnes.utils.set_cone(system=system,direction=[0.,0.,1.],period=2*size[2]/3,cone = 0.4, phi0=0)
 state.upload(ini)
 state.satisfy_constrains()
 print(state.energy_contributions_sum())
 s = state.download()
 container = magnes.io.container()
 container.store_system(system)
-container["STATE"] = s
+container["PATH"] = np.array([s])
 container.save(save)
 '''
 if __name__ == "__main__":

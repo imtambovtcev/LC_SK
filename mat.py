@@ -17,16 +17,16 @@ from termcolor import colored
 from minimize import *
 
 initial = Path('/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/initials/alt/20/1.npz')
-directory = Path('/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/alt_20/1')
+directory = Path('/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/alt_20_bulk/1/')
 print(f'{initial = }')
 print(f'{directory = }')
 
 make_map_from_file(save_dir=directory,
-                   KDbulk_list=np.linspace(0, -0.3, 31), #(0, -2.,41)(0, -0.5,11)
-                   KDsurf_list=np.linspace(0, 20,11), #(0,100,51)(0, 20,21)
+                   KDbulk_list=np.linspace(0.0, -0.3, 61), #(0, -2.,41)(0, -0.5,11)
+                   KDsurf_list=np.linspace(0, 0,1), #(0,100,51)(0, 20,21)
                    ref=initial,
                    period_N=1,
-                   max_steps_from_minimum=5,
+                   max_steps_from_minimum=6,
                    z_max_proj=np.infty,
                    reverse=True,
                    max_period=500)

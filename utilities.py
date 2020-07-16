@@ -14,3 +14,14 @@ def get_angle(s):
         [i for i in roots_qp if i >= 0 and sp_qp(i) > 0.8 * qp.max() and sp_qp(i) < 1.2 * qp.max()])
     idx = 0 if len(roots_qm)==1 else 1 if len(roots_qm)==2 else 2
     return np.abs(np.arctan(6/(roots_qm[idx] - roots_qp[idx]))*360/(2*np.pi))
+
+def get_zperiod(s):
+    xz = s[int(s.shape[0] / 2), int(s.shape[1] / 2), :, 0, 0]
+    sp_qm = CubicSpline(range(len(xz)), xz)
+    roots= np.array(sorted(sp_qm.roots().tolist()))
+    roots=roots[np.logical_and(roots>=0,roots<= len(xz))]
+    if len(roots)>1:
+        dr=np.diff(roots)
+        return np.mean(dr)
+    else:
+        return s.shape[2]

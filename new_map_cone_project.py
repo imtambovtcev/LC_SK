@@ -13,8 +13,8 @@ import map_file_manager as mfm
 import map_info
 import map_color
 
-file='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/initials/cone_project/cone_2.npz'
-directory='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/cone/30/cone_2_map/'
+file='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/cone/cone_3_t.npz'
+directory='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/cone/D/cone_3_map/'
 state_name='cone'
 
 
@@ -22,9 +22,9 @@ if not os.path.exists(directory):
     os.makedirs(directory)
 
 container = magnes.io.load(file)
-ini = container["STATE"]
+ini = list(container["PATH"])[0]
 
-J=1.0;D=np.tan(np.pi/30)
+J=1.0;
 
 size=ini.shape[0:3]
 print(size)
@@ -35,23 +35,32 @@ representatives = [(0., 0., 0.)]
 bc=[magnes.BC.PERIODIC,magnes.BC.PERIODIC,magnes.BC.FREE]
 
 Klist,Kaxis=mfm.file_manager(directory,
-					   params={'double':False, 'add': [np.round(np.linspace(0, 1, 21), decimals=6).tolist(),
-													   np.round(np.linspace(0, 100, 11), decimals=6).tolist()]})
+					   params={'double':False, 'add': [np.round(np.linspace(0, 1, 11), decimals=6).tolist(),
+													   np.round(np.linspace(20, 60, 11), decimals=6).tolist()]})
 
 #'source':'/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/xsp_map/best/'})
+
+Kx0=40
+Kz0=-80
 
 for idx,Kv in enumerate(Klist,start=1):
 	system = magnes.System(primitives, representatives, size, bc)
 	origin = magnes.Vertex(cell=[0, 0, 0])
+	D = np.tan(np.pi / Kv[1])
 	system.add(magnes.Exchange(origin, magnes.Vertex([1, 0, 0]), J, [D, 0., 0.]))
 	system.add(magnes.Exchange(origin, magnes.Vertex([0, 1, 0]), J, [0., D, 0.]))
 	system.add(magnes.Exchange(origin, magnes.Vertex([0, 0, 1]), J, [0., 0., D]))
 	system.add(magnes.Anisotropy(np.power(D, 2) * Kv[0]))
-	K = np.zeros(Nz)
-	K[0] = Kv[1]
-	K[-1] = Kv[1]
-	K = np.power(D, 2)*K.reshape(1, 1, Nz, 1)
-	system.add(magnes.Anisotropy(K, axis=[1, 0, 0]))
+	Kx = np.zeros(Nz)
+	Kx[0] = Kx0
+	Kx[-1] = Kx0
+	Kx = np.power(D, 2)*Kx.reshape(1, 1, Nz, 1)
+	system.add(magnes.Anisotropy(Kx, axis=[1, 0, 0]))
+	Kz = np.zeros(Nz)
+	Kz[0] = Kz0
+	Kz[-1] = Kz0
+	Kz = np.power(D, 2) * Kz.reshape(1, 1, Nz, 1)
+	system.add(magnes.Anisotropy(Kz, axis=[0, 0, 1]))
 	print(system)
 	state=system.field3D()
 	state.upload(ini)

@@ -318,7 +318,11 @@ def make_map_from_file(save_dir,KDbulk_list,KDsurf_list, ref,period_N=1,max_step
         print(colored('initial', 'green'))
         print(colored('K_bulk = {}\tK_surf = {}\n\n'.format(Kbulk_D, Ksurf_D), 'blue'))
         container = magnes.io.load(str(initial))
-        ini = container["STATE"]
+        if 'STATE' in container:
+            ini = container["STATE"]
+        else:
+            print(f'minimize from 0 image of the path with {container["PATH"].shape = }')
+            ini = list(container["PATH"])[0]
         period = ini.shape[0] / period_N
         print(f'{period = }')
         set_xperiod_point(Kbulk_D=Kbulk_D,Ksurf_D=Ksurf_D,initials_set=[[period,ini]],directory=directory,state_name=state_name,

@@ -15,15 +15,20 @@ matplotlib.rc('font', **font)
 cmap='viridis'
 
 def get_points(x,y,n):
-    if x.shape[0]>1:
-        xpoints=np.array(range(x.shape[0]))[::int(x.shape[0]/n)]
+    if isinstance(n,int):
+        if x.shape[0]>1:
+            xpoints=np.array(range(x.shape[0]))[::int(x.shape[0]/n)]
+        else:
+            xpoints=[0]
+        if x.shape[1]>1:
+            ypoints=np.array(range(x.shape[1]))[::int(x.shape[1]/n)]
+        else:
+            ypoints=[0]
     else:
-        xpoints=[0]
-    if x.shape[1]>1:
-        ypoints=np.array(range(x.shape[1]))[::int(x.shape[1]/n)]
-    else:
-        ypoints=[0]
-    return [xpoints,ypoints]
+        xpoints=n[0]
+        ypoints=n[1]
+
+    return [np.array(sorted(list(xpoints),key=lambda x: np.abs(x))),np.array(sorted(list(ypoints)))]
 
 def point_arg(x,y, point):
     return [np.argmin(np.linalg.norm(x - point[0], axis=1)),np.argmin(np.linalg.norm(y - point[1], axis=0))]
@@ -31,18 +36,21 @@ def point_arg(x,y, point):
 def plot_z(x,y,point, directory, state_name,n=20,show=False):
     os.environ['MAGNES_BACKEND'] = 'numpy'
     import magnes
+    directory = Path(directory)
     name = str(state_name)
     x0,y0=point_arg(x,y,point)
     xpoints,ypoints=get_points(x,y,n)
+    print(f'{xpoints = }\t{ypoints = }')
     cmap = plt.get_cmap('jet', len(xpoints))
     for xn in xpoints:
         try:
             container = magnes.io.load(str(directory.joinpath(name+'_{:.5f}_{:.5f}.npz'.format(x[xn,0], y[0,y0]))))
             s = container["STATE"]
+            l = s.shape[2]
             s= s[int(s.shape[0]/2),int(s.shape[1]/2),:,0,2]
             s=s.reshape(-1)
             z=np.array(range(len(s)))
-            plt.plot(z, s, c=cmap(int((len(xpoints)-1)*(x[xn,0]-x[xpoints,0].min())/(x[xpoints,0].max()-x[xpoints,0].min()))))
+            plt.plot(z/l, s, c=cmap(int((len(xpoints)-1)*(x[xn,0]-x[xpoints,0].min())/(x[xpoints,0].max()-x[xpoints,0].min()))))
         except:
             print(str(directory.joinpath(name+'_{:.5f}_{:.5f}.npz'.format(x[xn,0], y[0,y0])))+'\tplot z bulk fail')
     #plt.rc('text', usetex=True)
@@ -51,24 +59,30 @@ def plot_z(x,y,point, directory, state_name,n=20,show=False):
     sm.set_array([])
     cbar = plt.colorbar(sm)
     cbar.ax.get_yaxis().labelpad = 15
-    cbar.ax.set_ylabel('$K_{bulk}/D^2$', rotation=270)
-    plt.xlabel('$z$', fontsize=16)
-    plt.ylabel('$s_z$', fontsize=16)
-    plt.title('$K_{surf}/D^2 ='+' {:.3f}$'.format(y[0,y0]))
+    cbar.ax.set_ylabel('$K_{bulk} J/D^2$', rotation=270)
+    plt.xlabel('$z/l_0$', fontsize=16)
+    plt.ylabel('$m_z$', fontsize=16)
+    plt.title('$K_{surf} J/D^2 ='+' {:.3f}$'.format(y[0,y0]))
     plt.tight_layout()
     plt.savefig(directory.joinpath('info').joinpath('z_projection_bulk.pdf'))
     if show: plt.show()
     plt.close('all')
 
-    cmap = plt.get_cmap('jet', len(ypoints))
+    cmap = plt.get_cmap('jet', 256)
     for yn in ypoints:
         try:
             container = magnes.io.load(str(directory.joinpath(name + '_{:.5f}_{:.5f}.npz'.format(x[x0,0], y[0,yn]))))
             s = container["STATE"]
+            print(f'{s.shape = }')
+            l = s.shape[2]
+            print(f'{int(s.shape[0] / 2) = }')
+            print(f'{int(s.shape[1] / 2) = }')
             s = s[int(s.shape[0] / 2), int(s.shape[1] / 2), :, 0, 2]
+
             s = s.reshape(-1)
             z = np.array(range(len(s)))
-            plt.plot(z, s, c=cmap(int((len(ypoints)-1)*(y[0,yn]-y[0,ypoints].min())/(y[0,ypoints].max()-y[0,ypoints].min()))))
+            print('1')
+            plt.plot(z/l, s, c=cmap(int((256-1)*(y[0,yn]-y[0,ypoints].min())/(y[0,ypoints].max()-y[0,ypoints].min()))))
         except:
             print(str(directory.joinpath(name + '_{:.5f}_{:.5f}.npz'.format(x[x0,0], y[0,yn]))) + '\t z surf fail')
     # plt.rc('text', usetex=True)
@@ -77,10 +91,10 @@ def plot_z(x,y,point, directory, state_name,n=20,show=False):
     sm.set_array([])
     cbar = plt.colorbar(sm)
     cbar.ax.get_yaxis().labelpad = 15
-    cbar.ax.set_ylabel('$K_{surf}/D^2$', rotation=270)
-    plt.xlabel('$z$', fontsize=16)
-    plt.ylabel('$s_z$', fontsize=16)
-    plt.title('$K_{bulk}/D^2 ='+' {:.3f}$'.format(x[x0, 0]))
+    cbar.ax.set_ylabel('$K_{surf} J/D^2$', rotation=270)
+    plt.xlabel('$z/l_0$', fontsize=16)
+    plt.ylabel('$m_z$', fontsize=16)
+    plt.title('$K_{bulk} J/D^2 ='+' {:.3f}$'.format(x[x0, 0]))
     plt.tight_layout()
     plt.savefig(directory.joinpath('info').joinpath('z_projection_surf.pdf'))
     if show: plt.show()
@@ -110,12 +124,13 @@ def rect_plot(x,y,z,cmap='terrain'):
     extent = [x.min() - xs2/2, x.max() + xs2/2, y.min() - ys2/2, y.max() + ys2/2]
     plt.imshow(z, interpolation='nearest',cmap=cmap, extent=extent)
     ax.set_aspect(aspect='auto')
-    plt.xlabel('$K_{bulk}/D^2$', fontsize=16)
-    plt.ylabel('$K_{surf}/D^2$', fontsize=16)
+    plt.xlabel('$K_{bulk} J/D^2$', fontsize=16)
+    plt.ylabel('$K_{surf} J/D^2$', fontsize=16)
     plt.colorbar()
     plt.tight_layout()
 
 def plot_map(x,y,z,directory,name,show=False,cmap='terrain'):
+    directory = Path(directory)
     if np.all(np.array(z.shape) > 1):
         rect_plot(x, y, z)
         print(str(directory.joinpath('info').joinpath(name+ '_r.pdf')))
@@ -124,8 +139,8 @@ def plot_map(x,y,z,directory,name,show=False,cmap='terrain'):
         plt.close('all')
 
         plt.contourf(x, y, z)
-        plt.xlabel('$K_{bulk}/D^2$', fontsize=16)
-        plt.ylabel('$K_{surf}/D^2$', fontsize=16)
+        plt.xlabel('$K_{bulk} J/D^2$', fontsize=16)
+        plt.ylabel('$K_{surf} J/D^2$', fontsize=16)
         plt.title(name)
         plt.colorbar()
 
@@ -134,14 +149,14 @@ def plot_map(x,y,z,directory,name,show=False,cmap='terrain'):
     else:
         if np.all(x == x[0]):
             plt.plot(np.squeeze(y), np.squeeze(z), 'r.')
-            plt.xlabel('$K_{surf}/D^2$', fontsize=16)
-            plt.title('$K_{bulk}/D^2 = $' + '{:.3f}'.format(x[0,0]), fontsize=16)
+            plt.xlabel('$K_{surf} J/D^2$', fontsize=16)
+            plt.title('$K_{bulk} J/D^2 = $' + '{:.3f}'.format(x[0,0]), fontsize=16)
             f = open(str(directory.joinpath('info').joinpath(name+'_r.txt')), "w")
             np.savetxt(f, np.array([y.reshape(-1), z.reshape(-1)]).T, header="y z")
         elif np.all(y == y[0]):
             plt.plot(np.squeeze(x), np.squeeze(z), 'r.')
-            plt.xlabel('$K_{bulk}/D^2$', fontsize=16)
-            plt.title('$K_{surf}/D^2 = $' + '{:.3f}'.format(y[0,0]), fontsize=16)
+            plt.xlabel('$K_{bulk} J/D^2$', fontsize=16)
+            plt.title('$K_{surf} J/D^2 = $' + '{:.3f}'.format(y[0,0]), fontsize=16)
             f = open(str(directory.joinpath('info').joinpath(name+'_r.txt')), "w")
             np.savetxt(f, np.array([x.reshape(-1), z.reshape(-1)]).T, header="x z")
         plt.ylabel(name, fontsize=16)
@@ -152,6 +167,8 @@ def plot_map(x,y,z,directory,name,show=False,cmap='terrain'):
     plt.close('all')
 
 def plot_point(x,y,z,point,directory, file, show=False):
+    directory = Path(directory)
+    file_for_save=file.replace('$','').replace('/','')
     point_column = np.argmin(np.linalg.norm(x - point[0], axis=1))
     point_row = np.argmin(np.linalg.norm(y - point[1], axis=0))
     print('Point = ', x[point_column][0], y[:, point_row][0])
@@ -161,9 +178,9 @@ def plot_point(x,y,z,point,directory, file, show=False):
     py = z1[np.invert(np.isnan(z1))]
     if len(py) > 1:
         plt.plot(px, py, 'r.')
-        plt.xlabel('$K_{surf}/D^2$', fontsize=16)
+        plt.xlabel('$K_{surf} J/D^2$', fontsize=16)
         plt.ylabel(file, fontsize=16)
-        plt.title('$K_{bulk}/D^2 = $'+'{:.3f}'.format(x[point_column,0]), fontsize=16)
+        plt.title('$K_{bulk} J/D^2 = $'+'{:.3f}'.format(x[point_column,0]), fontsize=16)
         plt.tight_layout()
         plt.savefig(str(directory.joinpath('info').joinpath(file + '_p_surf.pdf')))
         if show: plt.show()
@@ -174,9 +191,9 @@ def plot_point(x,y,z,point,directory, file, show=False):
         ipy = int(ipx)
 
         plt.plot(ipx, ipy, 'r')
-        plt.xlabel('$K_{surf}/D^2$', fontsize=16)
+        plt.xlabel('$K_{surf} J/D^2$', fontsize=16)
         plt.ylabel(file, fontsize=16)
-        plt.title('$K_{bulk}/D^2 = $' + '{:.3f}'.format(x[point_column,0]), fontsize=16)
+        plt.title('$K_{bulk} J/D^2 = $' + '{:.3f}'.format(x[point_column,0]), fontsize=16)
         plt.tight_layout()
         plt.savefig(str(directory.joinpath('info').joinpath(file + '_pi_surf.pdf')))
         if show: plt.show()
@@ -188,11 +205,11 @@ def plot_point(x,y,z,point,directory, file, show=False):
     py = z2[np.invert(np.isnan(z2))]
     if len(py) > 1:
         plt.plot(px, py, 'r.')
-        plt.xlabel('$K_{bulk}/D^2$', fontsize=16)
+        plt.xlabel('$K_{bulk} J/D^2$', fontsize=16)
         plt.ylabel(file, fontsize=16)
-        plt.title('$K_{surf}/D^2 = $' + '{:.3f}'.format(y[0,point_row]), fontsize=16)
+        plt.title('$K_{surf} J/D^2 = $' + '{:.3f}'.format(y[0,point_row]), fontsize=16)
         plt.tight_layout()
-        plt.savefig(str(directory.joinpath('info').joinpath(file + '_p_surf.pdf')))
+        plt.savefig(str(directory.joinpath('info').joinpath(file + '_p_bulk.pdf')))
         if show: plt.show()
         plt.close('all')
 
@@ -200,33 +217,36 @@ def plot_point(x,y,z,point,directory, file, show=False):
         ipx = np.linspace(-0.3, px.max(), num=100, endpoint=True)
         ipy = int(ipx)
         plt.plot(ipx, ipy, 'r')
-        plt.xlabel('$K_{bulk}/D^2$', fontsize=16)
+        plt.xlabel('$K_{bulk} J/D^2$', fontsize=16)
         plt.ylabel(file, fontsize=16)
-        plt.title('$K_{surf}/D^2 = $' + '{:.3f}'.format(y[0,point_row]), fontsize=16)
+        plt.title('$K_{surf} J/D^2 = $' + '{:.3f}'.format(y[0,point_row]), fontsize=16)
         plt.tight_layout()
         plt.savefig(str(directory.joinpath('info').joinpath(file + '_pi_bulk.pdf')))
         if show: plt.show()
         plt.close('all')
 
-def plot_cut(x,y,z,directory,name,n=5,show=False,cmap='terrain'):
+def plot_cut(x,y,z,directory,name,n=5,show=False,cmap='terrain',xlim=None,ylim=None,marker=None,line='-'):
     name = str(name)
+    directory=Path(directory)
     if n == -1:
         xpoints, ypoints = [np.array(range(x.shape[0])),np.array(range(x.shape[1]))]
     else:
         xpoints, ypoints = get_points(x,y,n)
-
-    cmap = plt.get_cmap('jet', len(xpoints))
-    for xn in xpoints:
-        plt.plot(y[0,:], z[xn,:], c=cmap(int((len(xpoints)-1)*(x[xn,0]-x[xpoints,0].min())/(x[xpoints,0].max()-x[xpoints,0].min()))),
-                                                 label='$K_{bulk}/D^2 ='+' {:.3f}$'.format(x[xn,0]))
+    print(f'{xpoints = }\t{ypoints = }')
+    cmap = plt.get_cmap('jet',len(xpoints))
+    for idx,xn in enumerate(xpoints):
+        plt.plot(y[0,:], z[xn,:],marker=marker,linestyle=line, c=cmap(idx),
+                                                 label='$K_{bulk} J/D^2 ='+' {:.3f}$'.format(x[xn,0]))
         # plt.rc('text', usetex=True)
     norm = matplotlib.colors.Normalize(vmin=x[xpoints,0].min(), vmax=x[xpoints,0].max())
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])
     #cbar = plt.colorbar(sm)
     #cbar.ax.get_yaxis().labelpad = 15
-    #cbar.ax.set_ylabel('$K_{bulk}/D^2$', rotation=270)
-    plt.xlabel('$K_{surf}/D^2$', fontsize=16)
+    #cbar.ax.set_ylabel('$K_{bulk} J/D^2$', rotation=270)
+    if ylim is not None:
+        plt.xlim(ylim)
+    plt.xlabel('$K_{surf} J/D^2$', fontsize=16)
     plt.ylabel(name, fontsize=16)
     plt.legend()
     plt.tight_layout()
@@ -236,16 +256,18 @@ def plot_cut(x,y,z,directory,name,n=5,show=False,cmap='terrain'):
 
     cmap = plt.get_cmap('jet', len(ypoints))
     for yn in ypoints:
-        plt.plot(x[:,0], z[:,yn], c=cmap(int((len(ypoints)-1)*(y[0,yn]-y[0,ypoints].min())/(y[0,ypoints].max()-y[ypoints,0].min()))),
-                 label='$K_{surf}/D^2 ='+' {:.3f}$'.format(y[0,yn]))
+        plt.plot(x[:,0], z[:,yn],marker=marker,linestyle=line, c=cmap(int((len(ypoints)-1)*(y[0,yn]-y[0,ypoints].min())/(y[0,ypoints].max()-y[ypoints,0].min()))),
+                 label='$K_{surf} J/D^2 ='+' {:.3f}$'.format(y[0,yn]))
 
     norm = matplotlib.colors.Normalize(vmin=y[0,ypoints].min(), vmax=y[0,ypoints].max())
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])
     #cbar = plt.colorbar(sm)
     #cbar.ax.get_yaxis().labelpad = 15
-    #cbar.ax.set_ylabel('$K_{surf}/D^2$', rotation=270)
-    plt.xlabel('$K_{bulk}/D^2$', fontsize=16)
+    #cbar.ax.set_ylabel('$K_{surf} J/D^2$', rotation=270)
+    if xlim is not None:
+        plt.xlim(xlim)
+    plt.xlabel('$K_{bulk} J/D^2$', fontsize=16)
     plt.ylabel(name, fontsize=16)
     plt.legend()
     plt.tight_layout()

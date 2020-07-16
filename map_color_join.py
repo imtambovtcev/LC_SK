@@ -28,8 +28,8 @@ font = {'family' : 'sans-serif',
 matplotlib.rc('font', **font)
 cmap='viridis'
 
-def point_plot(directory,x_all,y_all,z_all,point,name,ylabel='Period',show=False):
-    for x,y,z,n in zip(x_all,y_all,z_all,name):
+def point_plot(directory,name,x_all,y_all,z_all,point,xlabel,ylabel='Period',show=False):
+    for x,y,z,n in zip(x_all,y_all,z_all,xlabel):
         point_column = np.argmin(np.linalg.norm(x - point[0], axis=1))
         point_row = np.argmin(np.linalg.norm(y - point[1], axis=0))
         print('Point = ', x[point_column][0], y[:, point_row][0])
@@ -39,14 +39,17 @@ def point_plot(directory,x_all,y_all,z_all,point,name,ylabel='Period',show=False
         py = z1[np.invert(np.isnan(z1))]
         if len(py) > 1:
             plt.plot(px, py, '.',label=n)
-    plt.xlabel('$K_{surf}/D^2$', fontsize=16)
+    plt.xlabel('$K_{surf} J/D^2$', fontsize=16)
     plt.ylabel(ylabel, fontsize=16)
     plt.legend()
     plt.tight_layout()
-    plt.savefig(directory + '_surf.pdf')
+    plt.savefig(directory.joinpath(name+'_surf.pdf'))
+    if show: plt.show()
+    plt.yscale('log')
+    plt.savefig(directory.joinpath(name + '_surf_log.pdf'))
     if show: plt.show()
     plt.close('all')
-    for x,y,z,n in zip(x_all,y_all,z_all,name):
+    for x,y,z,n in zip(x_all,y_all,z_all,xlabel):
         point_column = np.argmin(np.linalg.norm(x - point[0], axis=1))
         point_row = np.argmin(np.linalg.norm(y - point[1], axis=0))
         print('Point = ', x[point_column][0], y[:, point_row][0])
@@ -60,15 +63,18 @@ def point_plot(directory,x_all,y_all,z_all,point,name,ylabel='Period',show=False
                 plt.plot(yhat[0], yhat[1],label=n)
             except:
                 plt.plot(px, py, label=n)
-    plt.xlabel('$K_{surf}/D^2$', fontsize=16)
+    plt.xlabel('$K_{surf} J/D^2$', fontsize=16)
     plt.ylabel(ylabel, fontsize=16)
     plt.legend()
     plt.tight_layout()
-    plt.savefig(directory+ '_pi_surf.pdf')
+    plt.savefig(directory.joinpath(name+'_pi_surf.pdf'))
+    if show: plt.show()
+    plt.yscale('log')
+    plt.savefig(directory.joinpath(name + '_pi_surf_log.pdf'))
     if show: plt.show()
     plt.close('all')
 
-    for x,y,z,n in zip(x_all,y_all,z_all,name):
+    for x,y,z,n in zip(x_all,y_all,z_all,xlabel):
         point_column = np.argmin(np.linalg.norm(x - point[0], axis=1))
         point_row = np.argmin(np.linalg.norm(y - point[1], axis=0))
         print('Point = ', x[point_column][0], y[:, point_row][0])
@@ -80,11 +86,14 @@ def point_plot(directory,x_all,y_all,z_all,point,name,ylabel='Period',show=False
         if len(py) > 1:
             plt.plot(px, py, '.',label=n)
 
-    plt.xlabel('$K_{bulk}/D^2$', fontsize=16)
+    plt.xlabel('$K_{bulk} J/D^2$', fontsize=16)
     plt.ylabel(ylabel, fontsize=16)
     plt.legend()
     plt.tight_layout()
-    plt.savefig(directory + '_p_bulk.pdf')
+    plt.savefig(directory.joinpath(name+'_p_bulk.pdf'))
+    if show: plt.show()
+    plt.yscale('log')
+    plt.savefig(directory.joinpath(name + '_bulk_log.pdf'))
     if show: plt.show()
     plt.close('all')
 
@@ -101,11 +110,14 @@ def point_plot(directory,x_all,y_all,z_all,point,name,ylabel='Period',show=False
             int = np.poly1d(np.polyfit(px, py, 2))
             yhat = savgol_filter((px, py), 7, 3)
             plt.plot(yhat[0], yhat[1], label=n)
-    plt.xlabel('$K_{bulk}/D^2$', fontsize=16)
+    plt.xlabel('$K_{bulk} J/D^2$', fontsize=16)
     plt.ylabel(ylabel, fontsize=16)
     plt.legend()
     plt.tight_layout()
-    plt.savefig(directory + '_pi_bulk.pdf')
+    plt.savefig(directory.joinpath(name+'_pi_bulk.pdf'))
+    if show: plt.show()
+    plt.yscale('log')
+    plt.savefig(directory.joinpath(name + 'pi_bulk_log.pdf'))
     if show: plt.show()
     plt.close('all')
 
@@ -148,9 +160,11 @@ result_directory = '/home/ivan/LC_SK/spx/mat_map/'
 mode='best'
 '''
 
-directory = ['/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/20/cone/', '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/20/1/best/']
-result_directory = '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/20_results'
-mode='best'
+directory = [ '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/20_surf/1/best/', '/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/alt_20_surf/1/best/']
+result_directory = Path('/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/20_surf_results')
+mode='compare'
+name=['20','alt']
+point = np.array([0., 0.])
 
 
 #'/home/ivan/LC_SK/spx/spx_bulk_1/best/',
@@ -208,9 +222,9 @@ if mode=='compare':
     y = [Ki[:, :, 1] for Ki in K]
     if name is None:
         name=[Path(i).parts[-2].split('_')[-1] for i in directory]
-    point_plot(result_directory + 'xperiod', x, y, xperiod, point,name, show=False)
+    point_plot(result_directory,'xperiod', x, y, xperiod, point,name, show=False)
     epu=[df['energy_per_unit'] for df in data]
-    point_plot(result_directory + 'epu', x, y, epu, point, name,ylabel='Energy per unit', show=False)
+    point_plot(result_directory,'epu', x, y, epu, point, name,ylabel='Energy per unit', show=False)
     #map_color.plot_cut(x,y,epu,result_directory,result_directory+'epu.pdf')
     if np.all(np.array([d.parent.joinpath('ferr/info/map_info_structurized.npz').is_file() for d in directory])):
         data_f = [np.load(d.parent.joinpath('ferr/info/map_info_structurized.npz'), allow_pickle=True) for d in directory]
@@ -219,11 +233,11 @@ if mode=='compare':
         point_plot(result_directory + 'epu_f', x, y, ed, point, name, show=False)
     #xperiod = [df['xperiod'] for df in data]
     epu_c = [df['epu_from_cone'] for df in data]
-    point_plot(result_directory + 'epu_from_cone', x, y, epu_c, point, name,ylabel='epu_from_cone', show=False)
+    point_plot(result_directory,'epu_from_cone', x, y, epu_c, point, name,ylabel='epu_from_cone', show=False)
     epu_f = [df['epu_from_ferr'] for df in data]
-    point_plot(result_directory + 'epu_from_ferr', x, y, epu_f, point, name,ylabel='epu_from_ferr', show=False)
+    point_plot(result_directory,'epu_from_ferr', x, y, epu_f, point, name,ylabel='epu_from_ferr', show=False)
     z_mag = [df['mean_z_centre_abs_projection'] for df in data]
-    point_plot(result_directory + 'z_mag', x, y, z_mag, point, name, ylabel='$m_z$', show=False)
+    point_plot(result_directory,'z_mag', x, y, z_mag, point, name, ylabel='$m_z$', show=False)
     #point_plot(result_directory + 'epu', x, y, epu, point, name, show=False)
 
 if mode=='best':
@@ -260,8 +274,8 @@ if mode=='best':
             plt.plot(eqy[:, 0], eqy[:, 1], 'b.')
         plt.xlim([x.min(),x.max()])
         plt.ylim([y.min(), y.max()])
-        plt.xlabel('$K_{bulk}/D^2$', fontsize=16)
-        plt.ylabel('$K_{surf}/D^2$', fontsize=16)
+        plt.xlabel('$K_{bulk} J/D^2$', fontsize=16)
+        plt.ylabel('$K_{surf} J/D^2$', fontsize=16)
         plt.savefig(result_directory.joinpath('Best_points.pdf'))
         if show: plt.show()
         plt.close('all')
@@ -286,7 +300,7 @@ if mode=='best':
         plt.plot(y[axisn, np.invert(np.isnan(z0))], z1[np.invert(np.isnan(z0))], 'bx',label='zcone')
         plt.plot(y[axisn, np.invert(np.isnan(z1))], z1[np.invert(np.isnan(z1))], 'r.',label='xsp')
         plt.title('$Energy per unit, K_{bulk} = ' + '{:.2f}$'.format(x[point_column][0]), fontsize=16)
-        plt.xlabel('$K_{surf}/D^2$', fontsize=16)
+        plt.xlabel('$K_{surf} J/D^2$', fontsize=16)
         plt.ylabel('$Energy$', fontsize=16)
         plt.legend()
         plt.tight_layout()
@@ -299,7 +313,7 @@ if mode=='best':
         print(x[axisn, 0])
         plt.plot(y[axisn, np.invert(np.isnan(z2))], z2[np.invert(np.isnan(z2))], 'r.')
         plt.title('$Energy per unit, K_{bulk} = ' + '{:.2f}$'.format(x[point_column][0]), fontsize=16)
-        plt.xlabel('$K_{surf}/D^2$', fontsize=16)
+        plt.xlabel('$K_{surf} J/D^2$', fontsize=16)
         plt.ylabel('$Energy$', fontsize=16)
         plt.tight_layout()
         plt.savefig(result_directory.joinpath('Energy_diff_pu_s.pdf'))
@@ -312,7 +326,7 @@ if mode=='best':
         plt.plot(x[np.invert(np.isnan(z0)), axisn], z0[np.invert(np.isnan(z0))], 'bx',label='zcone')
         plt.plot(x[np.invert(np.isnan(z1)), axisn], z1[np.invert(np.isnan(z1))], 'r.',label='xsp')
         plt.title('$Energy per unit, K_{surf} = '+'{:.2f}$'.format(y[:, point_row][0]), fontsize=16)
-        plt.xlabel('$K_{bulk}/D^2$', fontsize=16)
+        plt.xlabel('$K_{bulk} J/D^2$', fontsize=16)
         plt.ylabel('$Energy$', fontsize=16)
         plt.tight_layout()
         plt.savefig(result_directory.joinpath('Energy_pu_n.pdf'))
@@ -322,7 +336,7 @@ if mode=='best':
         z2=z1-z0
         plt.plot(x[np.invert(np.isnan(z2)), axisn], z2[np.invert(np.isnan(z2))], 'r.')
         plt.title('$Energy per unit, K_{surf} = ' + '{:.2f}$'.format(y[:, point_row][0]), fontsize=16)
-        plt.xlabel('$K_{bulk}/D^2$', fontsize=16)
+        plt.xlabel('$K_{bulk} J/D^2$', fontsize=16)
         plt.ylabel('$Energy$', fontsize=16)
         plt.legend()
         plt.tight_layout()
@@ -364,6 +378,6 @@ elif mode=='skt':
     plt.plot(toron_y[:, 0], toron_y[:, 1], 'g.')
     plt.xlim([x.min(), x.max()])
     plt.ylim([y.min(), y.max()])
-    plt.xlabel('$K_{bulk}/D^2$', fontsize=16)
-    plt.ylabel('$K_{surf}/D^2$', fontsize=16)
+    plt.xlabel('$K_{bulk} J/D^2$', fontsize=16)
+    plt.ylabel('$K_{surf} J/D^2$', fontsize=16)
     plt.savefig(result_directory + 'Best_points.pdf')

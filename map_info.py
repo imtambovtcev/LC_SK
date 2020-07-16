@@ -179,26 +179,14 @@ def map_info(directory,var={}):
     mean_x_centre_abs_projection = np.full(K.shape[0], np.nan)
     mean_x_centre_abs_projection_angle = np.full(K.shape[0], np.nan)
     angle = np.full(K.shape[0], np.nan)
+    zperiod = np.full(K.shape[0], np.nan)
+    zturns = np.full(K.shape[0], np.nan)
     energy_if_xsp = np.full(K.shape[0], np.nan)
     xperiod = np.full(K.shape[0], np.nan)
     x_tilted_period = np.full(K.shape[0], np.nan)
     epu_from_cone= np.full(K.shape[0], np.nan)
     epu_from_ferr=np.full(K.shape[0], np.nan)
     t0=time.time()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     for idx,Kv in enumerate(K):
         filename=state_name
@@ -236,6 +224,10 @@ def map_info(directory,var={}):
             try:            mean_x_centre_abs_projection_angle[idx] = np.arccos(mean_x_centre_abs_projection[idx])*360/(2*np.pi)
             except:()
             try:            angle[idx] = utilities.get_angle(s)
+            except:()
+            try:            zperiod[idx] = utilities.get_zperiod(s)
+            except:()
+            try:            zturns[idx] = s.shape[2]/zperiod[idx]
             except:()
             try:            mean_z_abs_projection[idx] = np.sum(np.abs(np.dot(s, np.array([0., 0., 1.])))) / (s.size/3)
             except:()
@@ -284,7 +276,7 @@ def map_info(directory,var={}):
              mean_z_projection=mean_z_projection,mean_z_centre_projection=mean_z_centre_projection,
              mean_z_abs_projection=mean_z_abs_projection,mean_z_centre_abs_projection=mean_z_centre_abs_projection,
              mean_x_centre_abs_projection=mean_x_centre_abs_projection,
-             mean_x_centre_abs_projection_angle=mean_x_centre_abs_projection_angle,angle=angle,
+             mean_x_centre_abs_projection_angle=mean_x_centre_abs_projection_angle,angle=angle,zperiod=zperiod,zturns=zturns,
              energy_if_xsp=energy_if_xsp,xperiod=xperiod,x_tilted_period =x_tilted_period,
              epu_from_cone=epu_from_cone,epu_from_ferr=epu_from_ferr,
              allow_pickle=True)
