@@ -1,5 +1,7 @@
 import numpy as np
 from scipy.interpolate import CubicSpline
+import magnes
+from pathlib import Path
 
 def get_angle(s):
     qm = s[:, int(s.shape[1] / 2), int(s.shape[2] / 2) - 3, 0, 1]
@@ -22,6 +24,29 @@ def get_zperiod(s):
     roots=roots[np.logical_and(roots>=0,roots<= len(xz))]
     if len(roots)>1:
         dr=np.diff(roots)
-        return np.mean(dr)
+        dr=dr[dr>2]
+        print(f'{dr = }')
+        if len(dr)>0:
+            print(f'{100/np.mean(dr) = }')
+            return np.mean(dr)
+        else:
+            return s.shape[2]
     else:
         return s.shape[2]
+
+def get_energy(state):
+    s=state.download()
+    en=state.energy_contributions_sum()['total'] - s.shape[0] * s.shape[1] * (s.shape[2] - 2) * 3 - s.shape[0] * s.shape[1] * 5
+    return en, en / (s.shape[0] * s.shape[1] * s.shape[2])
+
+def state_to_path(file):
+    file=Path(file)
+    try:
+        container = magnes.io.load(str(file))
+        if 'STATE' in container:
+            container['PATH']=np.array([container['STATE']])
+            container.save_npz(str(file))
+            print(f'Success {file = }')
+    except:
+        print(f'Error at {file = }')
+

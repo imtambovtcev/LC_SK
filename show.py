@@ -27,7 +27,15 @@ def plot_state(system,s,directory,file,show_extras=False):
 	plt.close('all')
 	if show_extras:
 		plt.plot(s[int(s.shape[0]/2),int(s.shape[1]/2),:,0,2])
-		plt.plot()
+		plt.xlabel(r'$z$')
+		plt.ylabel(r'$m_z$')
+		plt.savefig(directory.joinpath(file + '_z.pdf'), bbox_inches='tight')
+		plt.close('all')
+		plt.plot(s[int(s.shape[0] / 2), int(s.shape[1] / 2), :, 0, 1])
+		plt.ylabel(r'$m_x$')
+		plt.xlabel(r'$z$')
+		plt.savefig(directory.joinpath(file + '_x.pdf'), bbox_inches='tight')
+		plt.close('all')
 
 def plot_npz(file,show_extras=False):
 	try:
@@ -46,7 +54,7 @@ def plot_npz(file,show_extras=False):
 				plot_state(system=system, s=s, directory=file.parent, file=file.stem,show_extras=show_extras)
 			else:
 				for idx, s in enumerate(container['PATH']):
-					plot_state(system=system, s=s, directory=file.parent, file=file.stem + '_{}'.format(idx),show_extras=show_extras)
+					plot_state(system=system, s=s, directory=file.parent.joinpath(file.stem), file=file.stem + '_{}'.format(idx),show_extras=show_extras)
 
 	except:
 		print('failed')

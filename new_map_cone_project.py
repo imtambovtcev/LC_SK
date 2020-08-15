@@ -13,8 +13,8 @@ import map_file_manager as mfm
 import map_info
 import map_color
 
-file='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/cone/cone_3_t.npz'
-directory='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/cone/D/cone_3_map/'
+file='/media/ivan/64E21891E2186A16/LC_SK/cone/cone_3_t.npz'
+directory='/media/ivan/64E21891E2186A16/LC_SK/cone/-20_40/D/cone_3_map/'
 state_name='cone'
 
 
@@ -35,13 +35,13 @@ representatives = [(0., 0., 0.)]
 bc=[magnes.BC.PERIODIC,magnes.BC.PERIODIC,magnes.BC.FREE]
 
 Klist,Kaxis=mfm.file_manager(directory,
-					   params={'double':False, 'add': [np.round(np.linspace(0, 1, 11), decimals=6).tolist(),
+					   params={'double':False, 'add': [np.round(np.linspace(0.4, 0.6, 11), decimals=6).tolist(),
 													   np.round(np.linspace(20, 60, 11), decimals=6).tolist()]})
 
 #'source':'/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/xsp_map/best/'})
 
 Kx0=40
-Kz0=-80
+Kz0=-20
 
 for idx,Kv in enumerate(Klist,start=1):
 	system = magnes.System(primitives, representatives, size, bc)

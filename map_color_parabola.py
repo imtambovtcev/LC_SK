@@ -3,6 +3,7 @@ import sys
 import os
 from pathlib import Path
 from minimize import parabola
+from scipy.interpolate import interp1d
 
 import matplotlib.pyplot as plt
 
@@ -36,44 +37,75 @@ def period_plot(energy,Kbulk, Ksurf,pb=None,wrong_energy=[]):
     plt.show()
 
 def map_color_3d(directory,point):
-        data = np.load(os.path.join(directory,'info/map_info_structurized.npz'), allow_pickle=True)
+    directory= Path(directory)
+    data = np.load(directory.joinpath('info/map_info_structurized.npz'), allow_pickle=True)
 
-        point=np.array(point)
+    point=np.array(point)
 
-        K = data['K']
-        energy=data['energy_per_unit']
-        angle=data['angle']
-        Kf=K[:,:,0,:2]
+    K = data['K']
+    energy=data['energy_per_unit']
+    angle=data['angle']
+    Kf=K[:,:,0,:2]
 
-        point_column = np.argmin(np.linalg.norm(Kf[:,:,0] - point[0], axis=1))
-        point_row = np.argmin(np.linalg.norm(Kf[:,:,1] - point[1], axis=0))
+    point_column = np.argmin(np.linalg.norm(Kf[:,:,0] - point[0], axis=1))
+    point_row = np.argmin(np.linalg.norm(Kf[:,:,1] - point[1], axis=0))
 
-        print(f'{point = }\t{point_column = }\t{point_row = }\t{Kf[point_column,point_row] = }')
-        x=K[point_column,point_row,:,2]
-        energy=energy[point_column,point_row,:]
-        angle=angle[point_column,point_row,:]
-        minenergy=np.nanmin(energy)
-        minperiod=x[np.nanargmin(energy)]
-        print(f'{minperiod = }±{x[1]-x[0]:.1f}\t{minenergy = }')
+    print(f'{point = }\t{point_column = }\t{point_row = }\t{Kf[point_column,point_row] = }')
+    x=K[point_column,point_row,:,2]
+    energy=energy[point_column,point_row,:]
+    angle=angle[point_column,point_row,:]
+    minenergy=np.nanmin(energy)
+    minperiod=x[np.nanargmin(energy)]
+    print(f'{minperiod = }±{x[1]-x[0]:.1f}\t{minenergy = }')
 
-        fig, ax1 = plt.subplots()
-        color = 'tab:red'
-        ax1.set_xlabel('Period')
-        ax1.set_ylabel('Energy per unit', color=color)
-        ax1.plot(x,energy,'.', color=color)
-        ax1.tick_params(axis='y', labelcolor=color)
+    fig, ax1 = plt.subplots()
+    color = 'tab:red'
+    ax1.set_xlabel(r'$\lambda$')
+    ax1.set_ylabel(r'$\langle E \rangle$', color=color)
+    ax1.plot(x,energy,'.', color=color)
+    ax1.tick_params(axis='y', labelcolor=color)
 
-        ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+    ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
 
-        color = 'tab:blue'
-        ax2.set_ylabel('angle', color=color)  # we already handled the x-label with ax1
-        ax2.plot(x, angle,'.', color=color)
-        ax2.tick_params(axis='y', labelcolor=color)
+    color = 'tab:blue'
+    ax2.set_ylabel(r'$\alpha$', color=color)  # we already handled the x-label with ax1
+    ax2.plot(x, angle,'.', color=color)
+    ax2.tick_params(axis='y', labelcolor=color)
 
-        plt.title('$K_{bulk}/D^2 = $'+'{:.5f}, '.format(Kf[point_column,point_row][0])+'$K_{surf}/D^2 = $'+'{:.5f}, '.format(Kf[point_column,point_row][1]))
-        plt.tight_layout()
-        plt.savefig(os.path.join(directory,'info/energy_{:.5f}_{:.5f}.pdf'.format(*(Kf[point_column,point_row].tolist()))))
-        plt.show()
+    plt.title('$K_{u}\;J/D^2 = $'+'{:.5f}, '.format(Kf[point_column,point_row][0])+'$K_{s}\;J/D^2 = $'+'{:.5f}, '.format(Kf[point_column,point_row][1]))
+    plt.tight_layout()
+    plt.savefig(directory.joinpath('info').joinpath('energy_{:.5f}_{:.5f}.pdf'.format(*(Kf[point_column,point_row].tolist()))))
+    f = open(str(directory.joinpath('info').joinpath('energy_{:.5f}_{:.5f}.txt'.format(*(Kf[point_column,point_row].tolist())))), "w")
+    np.savetxt(f, np.array([x.reshape(-1)[np.invert(np.isnan(energy.reshape(-1)))], energy.reshape(-1)[np.invert(np.isnan(energy.reshape(-1)))], angle.reshape(-1)[np.invert(np.isnan(energy.reshape(-1)))]]).T, header="period epu angle")
+    plt.show()
+
+    mask=np.invert(np.isnan(energy))
+    x_sp = np.linspace(x[mask].min(), x[mask].max(), 100)
+    sp = interp1d(x[mask], energy[mask], kind='cubic')
+    print(f'{x_sp = }\n{sp(x_sp) = }')
+
+    fig, ax1 = plt.subplots()
+    color = 'tab:red'
+    ax1.set_xlabel(r'$\lambda$')
+    ax1.set_ylabel(r'$\langle E \rangle$', color=color)
+    ax1.plot(x_sp, sp(x_sp), color=color)
+    ax1.tick_params(axis='y', labelcolor=color)
+
+    ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+
+    sp = interp1d(x[mask], angle[mask], kind='cubic')
+
+    color = 'tab:blue'
+    ax2.set_ylabel(r'$\alpha$', color=color)  # we already handled the x-label with ax1
+    ax2.plot(x_sp,sp(x_sp), color=color)
+    ax2.tick_params(axis='y', labelcolor=color)
+
+    plt.title('$K_{u}\;J/D^2 = $' + '{}, '.format(
+        Kf[point_column, point_row][0]) + '$K_{s}\;J/D^2 = $' + '{}, '.format(Kf[point_column, point_row][1]))
+    plt.tight_layout()
+    plt.savefig(
+        os.path.join(directory, 'info/energy_i_{:.5f}_{:.5f}.pdf'.format(*(Kf[point_column, point_row].tolist()))))
+    plt.show()
 
 if __name__ == "__main__":
     directory = Path('./') if len(sys.argv) <= 1 else sys.argv[1]

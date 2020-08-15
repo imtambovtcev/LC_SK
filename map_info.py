@@ -10,6 +10,7 @@ from shutil import copyfile
 import map_file_manager as mfm
 from scipy.interpolate import CubicSpline
 import utilities
+import magnes
 
 font = {'family' : 'sans-serif',
         'size'   : 16}
@@ -159,10 +160,9 @@ def localisation(state):
     y1 = np.linalg.norm(y1)
     return x0+x1+y0+y1
 
-def map_info(directory,var={}):
+def map_info(directory,var={},compute_negative=False):
+    print(f'{var = },{bool(var) = }')
     directory=Path(directory)
-    os.environ['MAGNES_BACKEND'] = 'numpy'
-    import magnes
     K, state_name=mfm.content(str(directory))
 
     state_type=np.full(K.shape[0],np.nan,dtype=object)
@@ -186,6 +186,8 @@ def map_info(directory,var={}):
     x_tilted_period = np.full(K.shape[0], np.nan)
     epu_from_cone= np.full(K.shape[0], np.nan)
     epu_from_ferr=np.full(K.shape[0], np.nan)
+    smallest_eigenvalue=np.full(K.shape[0], np.nan)
+    eigenvalue_positive=np.full(K.shape[0], np.nan)
     t0=time.time()
 
     for idx,Kv in enumerate(K):
@@ -196,7 +198,12 @@ def map_info(directory,var={}):
         try:
             container = magnes.io.load(str(os.path.join(directory, filename)))
             system=container.extract_system()
-            s = container["STATE"]
+            if "PATH" in container:
+                s = list(container["PATH"])[0]
+                print('state from path')
+            else:
+                s = container["STATE"]
+                print('state from state')
             state = system.field3D()
             state.upload(s)
             try:
@@ -227,7 +234,7 @@ def map_info(directory,var={}):
             except:()
             try:            zperiod[idx] = utilities.get_zperiod(s)
             except:()
-            try:            zturns[idx] = s.shape[2]/zperiod[idx]
+            try:            zturns[idx] = np.min([s.shape[2]/zperiod[idx],5])
             except:()
             try:            mean_z_abs_projection[idx] = np.sum(np.abs(np.dot(s, np.array([0., 0., 1.])))) / (s.size/3)
             except:()
@@ -241,6 +248,19 @@ def map_info(directory,var={}):
             #except:()
             #try:            epu_from_ferr[idx]=energy_per_unit[idx]-epu_ferr[idx]
             #except:()
+            try:
+                if compute_negative:
+                    print('computing negative')
+                    rate, negative, normal2d, oper, first, second = \
+                        magnes.rate.dynamic_prefactor_htst(system, state, normal=None,tolerance=1e-5, number_of_modes=1)
+                    negative=np.array(negative)[0]
+                    smallest_eigenvalue[idx]=negative
+                    eigenvalue_positive[idx]=1 if negative>=0 else 0
+                    print(f'{negative = }')
+                else:
+                    print('negative skipped')
+            except:
+                print('negative fail')
             try:
                 if local[idx]<100:
                     if abs(centre_charge[idx])<0.3 and abs(border_charge[idx])<0.3 and border_turn[idx]<20:
@@ -279,9 +299,11 @@ def map_info(directory,var={}):
              mean_x_centre_abs_projection_angle=mean_x_centre_abs_projection_angle,angle=angle,zperiod=zperiod,zturns=zturns,
              energy_if_xsp=energy_if_xsp,xperiod=xperiod,x_tilted_period =x_tilted_period,
              epu_from_cone=epu_from_cone,epu_from_ferr=epu_from_ferr,
+             smallest_eigenvalue=smallest_eigenvalue,eigenvalue_positive=eigenvalue_positive,
              allow_pickle=True)
     structurize(str(directory),var)
 
 if __name__ == "__main__":
     directory = Path('./') if len(sys.argv) <= 1 else Path(sys.argv[1])
-    map_info(directory)
+    compute_negative= False if len(sys.argv) <= 2 else sys.argv[2]=='True'
+    map_info(directory,compute_negative=compute_negative)

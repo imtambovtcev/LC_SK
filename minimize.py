@@ -6,6 +6,7 @@ import glob
 
 import magnes
 import magnes.graphics
+import utilities
 
 import matplotlib.pyplot as plt
 import map_file_manager as mfm
@@ -58,14 +59,12 @@ def change_shape(state,xsize):
                     ini[x, y, z, 0, 2] = interp_z(x /(xsize-1), z / (size0[2]-1))
     return ini
 
-def minimize(ini,J=1.,D=np.tan(np.pi/10),Kbulk=0.,Ksurf=0.):
+def minimize(ini,J=1.,D=np.tan(np.pi/10),Kbulk=0.,Ksurf=0.,
+             primitives = [(1., 0., 0.), (0., 1., 0.), (0., 0., 1.)],representatives = [(0., 0., 0.)],
+             bc = [magnes.BC.PERIODIC, magnes.BC.PERIODIC, magnes.BC.FREE],
+             maxtime=1000, alpha = 0.5, precision = 1e-7,catcherN=1000):
     size = list(ini.shape)[:3]
-
     Nz = ini.shape[2]
-    primitives = [(1., 0., 0.), (0., 1., 0.), (0., 0., 1.)]
-    representatives = [(0., 0., 0.)]
-    bc = [magnes.BC.PERIODIC, magnes.BC.PERIODIC, magnes.BC.FREE]
-
     system = magnes.System(primitives, representatives, size, bc)
     origin = magnes.Vertex(cell=[0, 0, 0])
     system.add(magnes.Exchange(origin, magnes.Vertex([1, 0, 0]), J, [D, 0., 0.]))
@@ -81,10 +80,7 @@ def minimize(ini,J=1.,D=np.tan(np.pi/10),Kbulk=0.,Ksurf=0.):
     state.satisfy_constrains()
     # fig, _, _ = magnes.graphics.plot_field3D(system, state, slice2D='xz', sliceN=int(system.size[1] / 2))
     # plt.show()
-    maxtime = 1000
-    alpha = 0.1
-    precision = 2.5e-5
-    catcher = magnes.EveryNthCatcher(1000)
+    catcher = magnes.EveryNthCatcher(catcherN)
 
     reporters = []  # [magnes.TextStateReporter()]#,magnes.graphics.VectorStateReporter3D(slice2D='xz',sliceN=0)]
     minimizer = magnes.StateNCG(system, reference=None, stepsize=alpha, maxiter=None, maxtime=200, precision=precision,
@@ -95,38 +91,41 @@ def minimize(ini,J=1.,D=np.tan(np.pi/10),Kbulk=0.,Ksurf=0.):
     return system,state.download(),state.energy_contributions_sum()['total']
 
 
-def minimize_from_file(directory,load_file,save_file,J=1.,D=np.tan(np.pi/10),Kbulk=0.,Ksurf=0.,reshape=None,z_max_proj=None):
+def minimize_from_file(directory,load_file,save_file,J=1.,D=np.tan(np.pi/10),Kbulk=0.,Ksurf=0.,reshape=None,z_max_proj=None, precision = 1e-7):
     directory=Path(directory)
     load_file=Path(load_file)
     save_file=Path(save_file)
-    container = magnes.io.load(os.path.join(directory,load_file))
-    ini = container["STATE"]
+    container = magnes.io.load(str(directory.joinpath(load_file)))
+    if 'STATE' in container:
+        ini = container["STATE"]
+    else:
+        ini = list(container["PATH"])[0]
     if reshape:
         ini=change_shape(ini,reshape)
-    system,s,energy=minimize(ini,J=J,D=D,Kbulk=Kbulk,Ksurf=Ksurf)
+    system,s,energy=minimize(ini,J=J,D=D,Kbulk=Kbulk,Ksurf=Ksurf, precision = precision)
     print(f'{np.mean(np.abs(s[:,:,:,0,0])) = }')
-    container = magnes.io.container()
+    container = magnes.io.container(str(directory.joinpath(save_file)))
     container.store_system(system)
-    container["STATE"] = s
-    container["ENERGY"] =energy
-    container.save(os.path.join(directory,save_file))
+    container["PATH"] = np.array([s])
+    container["ENERGY"] = energy
+    container.save_npz(str(directory.joinpath(save_file)))
     if z_max_proj is not None:
         zp=np.mean(np.abs(s[:,:,2:-2,0,0]))
         return energy / (s.shape[0] * s.shape[1] * s.shape[2]),zp
     else:
         return energy/(s.shape[0]*s.shape[1]*s.shape[2])
 
-def minimize_from_state(directory,load_state,save_file,J=1.,D=np.tan(np.pi/10),Kbulk=0.,Ksurf=0.,reshape=None,z_max_proj=None):
+def minimize_from_state(directory,load_state,save_file,J=1.,D=np.tan(np.pi/10),Kbulk=0.,Ksurf=0.,reshape=None,z_max_proj=None, precision = 1e-7):
     ini = load_state
     if reshape:
         ini=change_shape(ini,reshape)
-    system,s,energy=minimize(ini,J=J,D=D,Kbulk=Kbulk,Ksurf=Ksurf)
+    system,s,energy=minimize(ini,J=J,D=D,Kbulk=Kbulk,Ksurf=Ksurf, precision = precision)
     print(f'{np.mean(np.abs(s[:,:,:,0,0])) = }')
-    container = magnes.io.container()
+    container = magnes.io.container(str(directory.joinpath(save_file)))
     container.store_system(system)
-    container["STATE"] = s
+    container["PATH"] = np.array([s])
     container["ENERGY"] = energy
-    container.save(os.path.join(directory,save_file))
+    container.save_npz(str(directory.joinpath(save_file)))
     if z_max_proj is not None:
         zp=np.mean(np.abs(s[:,:,2:-2,0,0]))
         return energy / (s.shape[0] * s.shape[1] * s.shape[2]),zp
@@ -250,7 +249,7 @@ def get_reference(K,K_list,reverse=False):
     ref = [ i for i in ref if i[0] == ref[0][0] and i[1] == ref[0][1] ]
     return ref
 
-def set_xperiod_point(Kbulk_D,Ksurf_D,initials_set,directory,state_name='matspx',period_N=1,max_steps_from_minimum = 5, z_max_proj = np.infty,max_period = np.infty):
+def set_xperiod_point(Kbulk_D,Ksurf_D,initials_set,directory,state_name='matspx',period_N=1,max_steps_from_minimum = 5, z_max_proj = np.infty,max_period = np.infty, precision = 1e-7):
     energy = []
     for period,initial in initials_set:
         energy.append([period, *minimize_from_state(directory=Path(''),
@@ -275,7 +274,7 @@ def set_xperiod_point(Kbulk_D,Ksurf_D,initials_set,directory,state_name='matspx'
                                                    Kbulk=np.power(np.tan(np.pi / 10), 2) * Kbulk_D,
                                                    Ksurf=np.power(np.tan(np.pi / 10), 2) * Ksurf_D,
                                                    reshape=int(period * period_N),
-                                                   z_max_proj=z_max_proj)])
+                                                   z_max_proj=z_max_proj, precision = precision )])
         energy, pb, n, period, ref, nnan_energy, wrong_energy = next_point(energy=energy,
                                                                            max_steps_from_minimum=max_steps_from_minimum,
                                                                            period_N=period_N, z_max_proj=z_max_proj,
@@ -295,10 +294,9 @@ def set_xperiod_point(Kbulk_D,Ksurf_D,initials_set,directory,state_name='matspx'
             os.path.join(str(directory), state_name + '_{:.5f}_{:.5f}_{:.5f}.npz'.format(Kbulk_D, Ksurf_D, p)))
     return energy
 
-def make_map_from_file(save_dir,KDbulk_list,KDsurf_list, ref,period_N=1,max_steps_from_minimum = 5, z_max_proj = np.infty,max_period = np.infty,reverse = True):
+def make_map_from_file(save_dir,KDbulk_list,KDsurf_list, ref,period_N=1,max_steps_from_minimum = 5, z_max_proj = np.infty,max_period = np.infty,reverse = True, precision = 1e-7,state_name = 'matspx'):
     initial = Path(ref)
     directory = Path(save_dir)
-    state_name = 'matspx'
 
     if not os.path.exists(directory):
         os.makedirs(directory)
@@ -312,43 +310,52 @@ def make_map_from_file(save_dir,KDbulk_list,KDsurf_list, ref,period_N=1,max_step
 
     Klist = np.array(sorted(Klist.tolist(), key=lambda x: [-x[1], x[0]], reverse=reverse))
 
-    if len([f for f in os.listdir(directory) if Path(f).suffix == '.npz']) == 0:
-        Kbulk_D = Klist[0, 0]
-        Ksurf_D = Klist[0, 1]
-        print(colored('initial', 'green'))
-        print(colored('K_bulk = {}\tK_surf = {}\n\n'.format(Kbulk_D, Ksurf_D), 'blue'))
-        container = magnes.io.load(str(initial))
-        if 'STATE' in container:
-            ini = container["STATE"]
-        else:
-            print(f'minimize from 0 image of the path with {container["PATH"].shape = }')
-            ini = list(container["PATH"])[0]
-        period = ini.shape[0] / period_N
-        print(f'{period = }')
-        set_xperiod_point(Kbulk_D=Kbulk_D,Ksurf_D=Ksurf_D,initials_set=[[period,ini]],directory=directory,state_name=state_name,
-                          period_N=period_N,max_steps_from_minimum=max_steps_from_minimum,z_max_proj=z_max_proj,max_period=max_period)
+    print(f'{Klist = }')
 
     for idx, Kv in enumerate(Klist, start=1):
         complete, _ = mfm.content(directory)
-        Kbulk_D = Kv[0]
-        Ksurf_D = Kv[1]
-        print(colored('\n\nK_bulk = {}\tK_surf = {}\n\n'.format(Kbulk_D, Ksurf_D), 'blue'))
+        print(f'{len(complete) = }')
+        if len(complete) == 0:
+            Kbulk_D = Kv[0]
+            Ksurf_D = Kv[1]
+            print(colored('initial', 'green'))
+            print(colored('K_bulk = {}\tK_surf = {}\n\n'.format(Kbulk_D, Ksurf_D), 'blue'))
+            container = magnes.io.load(str(initial))
+            if 'STATE' in container:
+                ini = container["STATE"]
+            else:
+                print(f'minimize from 0 image of the path with {container["PATH"].shape = }')
+                ini = list(container["PATH"])[0]
+            period = ini.shape[0] / period_N
+            print(f'{period = }')
+            set_xperiod_point(Kbulk_D=Kbulk_D, Ksurf_D=Ksurf_D, initials_set=[[period, ini]], directory=directory,
+                              state_name=state_name,
+                              period_N=period_N, max_steps_from_minimum=max_steps_from_minimum, z_max_proj=z_max_proj,
+                              max_period=max_period, precision=precision)
+        else:
+            Kbulk_D = Kv[0]
+            Ksurf_D = Kv[1]
+            print(colored('\n\nK_bulk = {}\tK_surf = {}\n\n'.format(Kbulk_D, Ksurf_D), 'blue'))
 
-        initial = get_reference(Kv, complete, reverse) #Kbulk_D,Ksurf_D,period
-        initial = sorted(initial, key=lambda x: x[2])
+            initial = get_reference(Kv, complete, reverse) #Kbulk_D,Ksurf_D,period
+            initial = sorted(initial, key=lambda x: x[2])
 
-        initial_set=[]
-        for i in initial:
-            container = magnes.io.load(str(directory.joinpath(state_name + '_{:.5f}_{:.5f}_{:.5f}.npz'.format(i[0], i[1], i[2]))))
-            initial_set.append([i[2],container["STATE"]])
+            initial_set=[]
+            for i in initial:
+                container = magnes.io.load(str(directory.joinpath(state_name + '_{:.5f}_{:.5f}_{:.5f}.npz'.format(i[0], i[1], i[2]))))
+                if 'STATE' in container:
+                    ini = container["STATE"]
+                else:
+                    ini = list(container["PATH"])[0]
+                initial_set.append([i[2],ini])
 
-        set_xperiod_point(Kbulk_D=Kbulk_D, Ksurf_D=Ksurf_D, initials_set=initial_set, directory=directory,
-                          state_name=state_name,
-                          period_N=period_N, max_steps_from_minimum=max_steps_from_minimum, z_max_proj=z_max_proj,
-                          max_period=max_period)
+            set_xperiod_point(Kbulk_D=Kbulk_D, Ksurf_D=Ksurf_D, initials_set=initial_set, directory=directory,
+                              state_name=state_name,
+                              period_N=period_N, max_steps_from_minimum=max_steps_from_minimum, z_max_proj=z_max_proj,
+                              max_period=max_period, precision = precision)
 
 
-def make_map_from_map(save_dir, ref_dir,initial_period_N=1,period_N=1,max_steps_from_minimum = 5, z_max_proj = np.infty,max_period = np.infty,reverse = True):
+def make_map_from_map(save_dir, ref_dir,initial_period_N=1,period_N=1,max_steps_from_minimum = 5, z_max_proj = np.infty,max_period = np.infty,reverse = True, precision = 1e-7):
     directory = Path(save_dir)
     state_name = 'matspx'
 
@@ -361,17 +368,25 @@ def make_map_from_map(save_dir, ref_dir,initial_period_N=1,period_N=1,max_steps_
     print(f'{ref_axis = }')
     for Kbulk_D in ref_axis[0]:
         for Ksurf_D in ref_axis[1]:
-            initial_set = []
+            min_ini_energy=np.infty
             for i in ref[np.logical_and(ref[:,0]==Kbulk_D,ref[:,1]==Ksurf_D)]:
                 container = magnes.io.load(
                     str(ref_dir.joinpath(initial_state_name + '_{:.5f}_{:.5f}_{:.5f}.npz'.format(i[0], i[1], i[2]))))
-                ini=container["STATE"]
-                ini0=np.copy(ini)
-                for ct in range(period_N-initial_period_N):
-                    ini=np.concatenate([ini,ini0],axis=0)
-                initial_set.append([i[2], ini])
+                system=container.extract_system()
+                if 'STATE' in container:
+                    ini = container["STATE"]
+                else:
+                    ini = list(container["PATH"])[0]
+                state = system.field3D()
+                state.upload(ini)
+                if utilities.get_energy(state)[1]< min_ini_energy:
+                    min_ini_energy=utilities.get_energy(state)[1]
+                    ini0=np.copy(ini)
+                    for ct in range(period_N - initial_period_N):
+                        ini = np.concatenate([ini, ini0], axis=0)
+                    initial_set = [[i[2], ini]]
 
             set_xperiod_point(Kbulk_D=Kbulk_D, Ksurf_D=Ksurf_D, initials_set=initial_set, directory=directory,
                               state_name=state_name,
                               period_N=period_N, max_steps_from_minimum=max_steps_from_minimum, z_max_proj=z_max_proj,
-                              max_period=max_period)
+                              max_period=max_period, precision = precision)
