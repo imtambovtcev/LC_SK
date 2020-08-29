@@ -16,8 +16,8 @@ from pathlib import Path
 from termcolor import colored
 from minimize import *
 
-initial = Path('/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/alt_bulk_from_rows/alt_20_bulk_0/1')
-directory = Path('/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/new_spx/alt_bulk_from_rows/alt_20_bulk_0/10')
+initial = Path('/media/ivan/64E21891E2186A16/LC_SK/new_spx/-0.1_5/t/1/')
+directory = Path('/media/ivan/64E21891E2186A16/LC_SK/new_spx/-0.1_5/t/10')
 
 print(f'{initial = }')
 print(f'{directory = }')

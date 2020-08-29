@@ -8,12 +8,18 @@ import matplotlib
 from scipy.optimize import curve_fit
 from pathlib import Path
 import magnes
+from scipy.interpolate import interp1d
 
 font = {'family' : 'sans-serif',
         'size'   : 12}
 
 matplotlib.rc('font', **font)
 cmap='viridis'
+
+def smooth(x,y):
+    xs = np.linspace(x.min(), x.max(), 100)
+    f = interp1d(x, y, kind='cubic')
+    return [xs,f(xs)]
 
 def get_points(x,y,n):
     if isinstance(n,int):
@@ -34,14 +40,14 @@ def get_points(x,y,n):
 def point_arg(x,y, point):
     return [np.argmin(np.linalg.norm(x - point[0], axis=1)),np.argmin(np.linalg.norm(y - point[1], axis=0))]
 
-def plot_z(x,y,point, directory, state_name,n=20,show=False,caption=True):
+def plot_z(x,y,point, directory, state_name,n=20,show=False,caption=True,colorbar_type='text'):
     directory = Path(directory)
     name = str(state_name)
     x0,y0=point_arg(x,y,point)
     xpoints,ypoints=get_points(x,y,n)
     #print(f'{xpoints = }\t{ypoints = }')
     cmap = plt.get_cmap('jet', len(xpoints))
-    for xn in xpoints:
+    for ct,xn in enumerate(xpoints):
         try:
             container = magnes.io.load(str(directory.joinpath(name+'_{:.5f}_{:.5f}.npz'.format(x[xn,0], y[0,y0]))))
             if 'STATE' in container:
@@ -52,18 +58,36 @@ def plot_z(x,y,point, directory, state_name,n=20,show=False,caption=True):
             s= s[int(s.shape[0]/2),int(s.shape[1]/2),:,0,2]
             s=s.reshape(-1)
             z=np.array(range(len(s)))
-            plt.plot(z/l, s, c=cmap(int((len(xpoints)-1)*(x[xn,0]-x[xpoints,0].min())/(x[xpoints,0].max()-x[xpoints,0].min()))))
+            if colorbar_type == 'text':
+                color = cmap(int((len(xpoints) - 1) * (x[xn, 0] - x[xpoints, 0].min()) / (
+                            x[xpoints, 0].max() - x[xpoints, 0].min())))
+                plt.plot(z / l, s, c=color, linewidth=2)
+                n = int(len(z) * ct / len(xpoints))
+                angle = np.arctan((s[n + 1] - s[n]) / (z[n + 1] / l - z[n] / l)) * 180 / np.pi
+                trans_angle = plt.gca().transData.transform_angles(np.array((angle,)),
+                                                                   np.array([s.min(), s.max()]).reshape((1, 2)))[0]
+                plt.text(z[n]/l,s[n]-0.015,str(x[xn,0]),c=color,rotation=trans_angle, rotation_mode='anchor',
+                         bbox=dict(boxstyle='round', facecolor='white', edgecolor='none',alpha=0.5))
+            else:
+                color = cmap(int((len(xpoints) - 1) * (x[xn, 0] - x[xpoints, 0].min()) / (
+                            x[xpoints, 0].max() - x[xpoints, 0].min())))
+                plt.plot(z / l, s, c=color, linewidth=2)
         except:
             print(str(directory.joinpath(name+'_{:.5f}_{:.5f}.npz'.format(x[xn,0], y[0,y0])))+'\tplot z bulk fail')
     #plt.rc('text', usetex=True)
     norm = matplotlib.colors.Normalize(vmin=x[xpoints,0].min(), vmax=x[xpoints,0].max())
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])
-    cbar = plt.colorbar(sm)
-    cbar.ax.get_yaxis().labelpad = 15
-    cbar.ax.set_ylabel(r'$K^u\; J/D^2$', rotation=270)
-    plt.xlabel(r'$z/l_0$', fontsize=16)
-    plt.ylabel(r'$m_z$', fontsize=16)
+    if colorbar_type=='text':
+        print(colorbar_type)
+    elif colorbar_type=='colorbar':
+        cbar = plt.colorbar(sm)
+        cbar.ax.get_yaxis().labelpad = 15
+        cbar.ax.set_ylabel(r'$\kappa^b$', rotation=270,fontsize=16)
+    plt.xlabel(r'$z/l_0$', fontsize=24)
+    plt.ylabel(r'$m_z$', fontsize=24)
+    plt.yticks(fontsize=16)
+    plt.xticks(fontsize=16)
     if caption:
         plt.title(r'$K^s\; J/D^2 ='+' {:.3f}$'.format(y[0,y0]))
     plt.tight_layout()
@@ -72,7 +96,7 @@ def plot_z(x,y,point, directory, state_name,n=20,show=False,caption=True):
     plt.close('all')
 
     cmap = plt.get_cmap('jet', 256)
-    for yn in ypoints:
+    for ct,yn in enumerate(ypoints):
         try:
             container = magnes.io.load(str(directory.joinpath(name + '_{:.5f}_{:.5f}.npz'.format(x[x0,0], y[0,yn]))))
             s = container["STATE"]
@@ -84,19 +108,37 @@ def plot_z(x,y,point, directory, state_name,n=20,show=False,caption=True):
 
             s = s.reshape(-1)
             z = np.array(range(len(s)))
-            print('1')
-            plt.plot(z/l, s, c=cmap(int((256-1)*(y[0,yn]-y[0,ypoints].min())/(y[0,ypoints].max()-y[0,ypoints].min()))))
+            if colorbar_type == 'text':
+                color = cmap(int((256 - 1) * ct/len(ypoints)))
+                plt.plot(z / l, s, c=color, linewidth=2)
+                n = int(len(z) * ct / len(ypoints))
+                angle = np.arctan((s[n + 1] - s[n]) / (z[n + 1] / l - z[n] / l)) * 180 / np.pi
+                trans_angle = plt.gca().transData.transform_angles(np.array((angle,)),
+                                                                   np.array([0 if s.min()>=0 else -1, 1]).reshape((1, 2)))[0]
+                plt.text(z[n]/l,s[n]-0.02,str(y[0,yn]),c=color,rotation=trans_angle, rotation_mode='anchor',
+                         bbox=dict(boxstyle='round', facecolor='white', edgecolor='none',alpha=0.9))
+            else:
+                color = cmap(
+                    int((256 - 1) * (y[0, yn] - y[0, ypoints].min()) / (y[0, ypoints].max() - y[0, ypoints].min())))
+                plt.plot(z / l, s, c=color, linewidth=2)
         except:
             print(str(directory.joinpath(name + '_{:.5f}_{:.5f}.npz'.format(x[x0,0], y[0,yn]))) + '\t z surf fail')
     # plt.rc('text', usetex=True)
     norm = matplotlib.colors.Normalize(vmin=y[0,ypoints].min(), vmax=y[0,ypoints].max())
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])
-    cbar = plt.colorbar(sm)
-    cbar.ax.get_yaxis().labelpad = 15
-    cbar.ax.set_ylabel(r'$K^s\; J/D^2$', rotation=270)
-    plt.xlabel(r'$z/l_0$', fontsize=16)
-    plt.ylabel(r'$m_z$', fontsize=16)
+    if colorbar_type == 'text':
+        print(colorbar_type)
+
+
+    elif colorbar_type == 'colorbar':
+        cbar = plt.colorbar(sm)
+        cbar.ax.get_yaxis().labelpad = 15
+        cbar.ax.set_ylabel(r'$\kappa^b$', rotation=270, fontsize=16)
+    plt.xlabel(r'$z/l_0$', fontsize=24)
+    plt.ylabel(r'$m_z$', fontsize=24)
+    plt.yticks(fontsize=16)
+    plt.xticks(fontsize=16)
     if caption:
         plt.title(r'$K^u\; J/D^2 ='+' {:.3f}$'.format(x[x0, 0]))
     plt.tight_layout()
@@ -128,8 +170,8 @@ def rect_plot(x,y,z,cmap='terrain'):
     extent = [x.min() - xs2/2, x.max() + xs2/2, y.min() - ys2/2, y.max() + ys2/2]
     plt.imshow(z, interpolation='nearest',cmap=cmap, extent=extent)
     ax.set_aspect(aspect='auto')
-    plt.xlabel(r'$K^u\; J/D^2$', fontsize=16)
-    plt.ylabel(r'$K^s\; J/D^2$', fontsize=16)
+    plt.xlabel(r'$\kappa^b$', fontsize=16)
+    plt.ylabel(r'$\kappa^s$', fontsize=16)
     plt.colorbar()
     plt.tight_layout()
 
@@ -143,8 +185,8 @@ def plot_map(x,y,z,directory,name,show=False,cmap='terrain'):
         plt.close('all')
 
         plt.contourf(x, y, z)
-        plt.xlabel(r'$K^u\; J/D^2$', fontsize=16)
-        plt.ylabel(r'$K^s\; J/D^2$', fontsize=16)
+        plt.xlabel(r'$\kappa^b$', fontsize=16)
+        plt.ylabel(r'$\kappa^s$', fontsize=16)
         plt.title(name)
         plt.colorbar()
 
@@ -153,13 +195,13 @@ def plot_map(x,y,z,directory,name,show=False,cmap='terrain'):
     else:
         if np.all(x == x[0]):
             plt.plot(np.squeeze(y), np.squeeze(z), 'r.')
-            plt.xlabel('$K^s\; J/D^2$', fontsize=16)
+            plt.xlabel('$\kappa^s$', fontsize=16)
             plt.title('$K^u\; J/D^2 = $' + '{:.3f}'.format(x[0,0]), fontsize=16)
             f = open(str(directory.joinpath('info').joinpath(name+'_r.txt')), "w")
             np.savetxt(f, np.array([y.reshape(-1), z.reshape(-1)]).T, header="y z")
         elif np.all(y == y[0]):
             plt.plot(np.squeeze(x), np.squeeze(z), 'r.')
-            plt.xlabel(r'$K^u\; J/D^2$', fontsize=16)
+            plt.xlabel(r'$\kappa^b$', fontsize=16)
             plt.title(r'$K^s\; J/D^2 = $' + '{:.3f}'.format(y[0,0]), fontsize=16)
             f = open(str(directory.joinpath('info').joinpath(name+'_r.txt')), "w")
             np.savetxt(f, np.array([x.reshape(-1), z.reshape(-1)]).T, header="x z")
@@ -183,7 +225,7 @@ def plot_point(x,y,z,point,directory, file, show=False,file_for_save=None):
     py = z1[np.invert(np.isnan(z1))]
     if len(py) > 1:
         plt.plot(px, py, 'r.')
-        plt.xlabel(r'$K^s\; J/D^2$', fontsize=16)
+        plt.xlabel(r'$\kappa^s$', fontsize=16)
         plt.ylabel(file, fontsize=16)
         plt.title(r'$K^u\; J/D^2 = $'+'{:.3f}'.format(x[point_column,0]), fontsize=16)
         plt.tight_layout()
@@ -196,7 +238,7 @@ def plot_point(x,y,z,point,directory, file, show=False,file_for_save=None):
         ipy = int(ipx)
 
         plt.plot(ipx, ipy, 'r')
-        plt.xlabel(r'$K^s\; J/D^2$', fontsize=16)
+        plt.xlabel(r'$\kappa^s$', fontsize=16)
         plt.ylabel(r"{}".format(file), fontsize=16)
         plt.title(r'$K^u\; J/D^2 = $' + '{:.3f}'.format(x[point_column,0]), fontsize=16)
         plt.tight_layout()
@@ -210,7 +252,7 @@ def plot_point(x,y,z,point,directory, file, show=False,file_for_save=None):
     py = z2[np.invert(np.isnan(z2))]
     if len(py) > 1:
         plt.plot(px, py, 'r.')
-        plt.xlabel(r'$K^u\; J/D^2$', fontsize=16)
+        plt.xlabel(r'$\kappa^b$', fontsize=16)
         plt.ylabel(r"{}".format(file), fontsize=16)
         plt.title(r'$K^s\; J/D^2 = $' + '{:.3f}'.format(y[0,point_row]), fontsize=16)
         plt.tight_layout()
@@ -222,7 +264,7 @@ def plot_point(x,y,z,point,directory, file, show=False,file_for_save=None):
         ipx = np.linspace(-0.3, px.max(), num=100, endpoint=True)
         ipy = int(ipx)
         plt.plot(ipx, ipy, 'r')
-        plt.xlabel(r'$K^u\; J/D^2$', fontsize=16)
+        plt.xlabel(r'$\kappa^b$', fontsize=16)
         plt.ylabel(r"{}".format(file), fontsize=16)
         plt.title(r'$K^s\; J/D^2 = $' + '{:.3f}'.format(y[0,point_row]), fontsize=16)
         plt.tight_layout()
@@ -250,10 +292,10 @@ def plot_cut(x,y,z,directory,name,n=5,show=False,cmap='terrain',xlim=None,ylim=N
     sm.set_array([])
     #cbar = plt.colorbar(sm)
     #cbar.ax.get_yaxis().labelpad = 15
-    #cbar.ax.set_ylabel('$K^u\; J/D^2$', rotation=270)
+    #cbar.ax.set_ylabel('$\kappa^b$', rotation=270)
     if ylim is not None:
         plt.xlim(ylim)
-    plt.xlabel(r'$K^s\; J/D^2$', fontsize=16)
+    plt.xlabel(r'$\kappa^s$', fontsize=16)
     plt.ylabel(r"{}".format(name), fontsize=16)
     plt.legend()
     plt.tight_layout()
@@ -271,10 +313,10 @@ def plot_cut(x,y,z,directory,name,n=5,show=False,cmap='terrain',xlim=None,ylim=N
     sm.set_array([])
     #cbar = plt.colorbar(sm)
     #cbar.ax.get_yaxis().labelpad = 15
-    #cbar.ax.set_ylabel('$K^s\; J/D^2$', rotation=270)
+    #cbar.ax.set_ylabel('$\kappa^s$', rotation=270)
     if xlim is not None:
         plt.xlim(xlim)
-    plt.xlabel(r'$K^u\; J/D^2$', fontsize=16)
+    plt.xlabel(r'$\kappa^b$', fontsize=16)
     plt.ylabel(r"{}".format(name), fontsize=16)
     plt.legend()
     plt.tight_layout()

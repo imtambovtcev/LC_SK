@@ -13,8 +13,8 @@ import map_file_manager as mfm
 import map_info
 import map_color
 
-file='/media/ivan/64E21891E2186A16/LC_SK/cone/cone_3_t.npz'
-directory='/media/ivan/64E21891E2186A16/LC_SK/cone/-20_40/D/cone_3_map/'
+file='/media/ivan/64E21891E2186A16/LC_SK/cone/cone_3.npz'
+directory='/media/ivan/64E21891E2186A16/LC_SK/cone/paper/cone_3_map/'
 state_name='cone'
 
 
@@ -23,6 +23,8 @@ if not os.path.exists(directory):
 
 container = magnes.io.load(file)
 ini = list(container["PATH"])[0]
+
+
 
 J=1.0;
 
@@ -34,14 +36,16 @@ primitives = [(1., 0., 0.), (0., 1., 0.), (0., 0., 1.)]
 representatives = [(0., 0., 0.)]
 bc=[magnes.BC.PERIODIC,magnes.BC.PERIODIC,magnes.BC.FREE]
 
+
+
 Klist,Kaxis=mfm.file_manager(directory,
-					   params={'double':False, 'add': [np.round(np.linspace(0.4, 0.6, 11), decimals=6).tolist(),
+					   params={'double':False, 'add': [np.round(np.linspace(0., 3., 61), decimals=6).tolist(),
 													   np.round(np.linspace(20, 60, 11), decimals=6).tolist()]})
 
 #'source':'/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/xsp_map/best/'})
 
-Kx0=40
-Kz0=-20
+Kx0=1000
+Kz0=-1000
 
 for idx,Kv in enumerate(Klist,start=1):
 	system = magnes.System(primitives, representatives, size, bc)
@@ -81,10 +85,10 @@ for idx,Kv in enumerate(Klist,start=1):
 
 	minimizer.optimize(state)
 	s=state.download()
-	container = magnes.io.container()
+	container = magnes.io.container(directory +state_name+ '_{:.5f}_{:.5f}.npz'.format(Kv[0], Kv[1]))
 	container.store_system(system)
-	container["STATE"] = s
+	container["PATH"] = [s]
 	container.save(directory +state_name+ '_{:.5f}_{:.5f}.npz'.format(Kv[0], Kv[1]))
 
 map_info.map_info(directory)
-#map_color.map_color(directory)
+map_color.map_color(directory)

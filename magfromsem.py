@@ -14,14 +14,14 @@ def from_sem(directory,save_file=None):
     dictionary = ast.literal_eval(contents)
     print(dictionary)
     Nz=int(dictionary['amount of directors'])+1
-    D=float(dictionary['d = 2PI Thick / q0'].split(' ')[0])
-    K2=float(dictionary['K2'].split(' ')[0])
-    U=float(dictionary['K2'].split(' ')[0])
-    F=U*1
-    W_phi=float(dictionary['W_phi'].split(' ')[0])
-    W_theta=float(dictionary['W_theta'].split(' ')[0])
-    Kx0=W_phi*1
-    Kz0=W_theta*1
+    Thick=float(dictionary['Thick'].split(' ')[0])
+    d=float(dictionary['d = 2PI Thick / q0'].split(' ')[0])
+    K2=float(dictionary['K2'].split(' ')[0])*1e-12
+    U=float(dictionary['U'].split(' ')[0])*1e-3
+    W_phi=float(dictionary['W_phi'].split(' ')[0])*1e-9
+    W_theta=float(dictionary['W_theta'].split(' ')[0])*1e-9
+    varepsilon=9
+
 
 
     file = np.genfromtxt(directory.joinpath('transition')).T
@@ -46,11 +46,14 @@ def from_sem(directory,save_file=None):
     system = magnes.System(primitives, representatives, size, bc)
     origin = magnes.Vertex(cell=[0, 0, 0])
     J=1.
-    D = D
+    D = np.tan(np.pi / (Nz / (2 * d)))
+    K_bulk=varepsilon*(U*U)/K2
+    Kx0=W_theta*Thick*Thick/K2
+    Kz0=W_phi*Thick*Thick/K2
     system.add(magnes.Exchange(origin, magnes.Vertex([1, 0, 0]), J, [D, 0., 0.]))
     system.add(magnes.Exchange(origin, magnes.Vertex([0, 1, 0]), J, [0., D, 0.]))
     system.add(magnes.Exchange(origin, magnes.Vertex([0, 0, 1]), J, [0., 0., D]))
-    system.add(magnes.Anisotropy(np.power(D, 2) * F))
+    system.add(magnes.Anisotropy(K_bulk))
     Kx = np.zeros(Nz)
     Kx[0] = Kx0
     Kx[-1] = Kx0
@@ -77,5 +80,5 @@ def from_sem(directory,save_file=None):
 
 if __name__ == "__main__":
     directory=sys.argv[1]
-    name = None if len(sys.argv)<2 else sys.argv[2]
+    name = None if len(sys.argv)<=2 else sys.argv[2]
     from_sem(directory=directory,save_file=name)

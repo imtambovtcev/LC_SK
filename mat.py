@@ -17,18 +17,18 @@ from pathlib import Path
 from termcolor import colored
 from minimize import *
 
-initial = Path('/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/2path.npz')
-directory = Path('/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/r/1')
+initial = Path('/media/ivan/64E21891E2186A16/LC_SK/new_spx/20/1/best/matspx_-0.10000_5.00000.npz')
+directory = Path('/media/ivan/64E21891E2186A16/LC_SK/new_spx/-0.1_5/st/1/')
 print(f'{initial = }')
 print(f'{directory = }')
 
 make_map_from_file(save_dir=directory,
-                   KDbulk_list=np.linspace(-2., 0., 21), #(0, -2.,41)(0, -0.5,11)(0.0, -9, 1801)
-                   KDsurf_list=np.linspace(0, 60,21), #(0,100,51)(0, 20,21)
+                   KDbulk_list=np.linspace(-0.1, -0.1, 1), #(0, -2.,41)(0, -0.5,11)(0.0, -9, 1801)
+                   KDsurf_list=np.linspace(5, 5,1), #(0,100,51)(0, 20,21)
                    ref=initial,
                    period_N=1,
-                   max_steps_from_minimum=4,
-                   z_max_proj=np.infty,
+                   max_steps_from_minimum=10,
+                   z_max_proj=0.25,#np.infty,
                    reverse=True,
                    max_period=500, precision = 5e-5)
 
