@@ -1,9 +1,10 @@
 import numpy as np
 
 import os
+from pathlib import Path
 
-os.environ['MAGNES_BACKEND'] = 'nocache'
-os.environ['MAGNES_DTYPE'] = 'f32'
+#os.environ['MAGNES_BACKEND'] = 'nocache'
+#os.environ['MAGNES_DTYPE'] = 'f32'
 
 import magnes
 import magnes.graphics
@@ -13,15 +14,15 @@ import map_file_manager as mfm
 import map_info
 import map_color
 
-file='/media/ivan/64E21891E2186A16/LC_SK/cone/cone_3.npz'
-directory='/media/ivan/64E21891E2186A16/LC_SK/cone/paper/cone_3_map/'
+file=Path('/home/ivan/LC_SK/cone/cone_2.npz')
+directory=Path('/home/ivan/LC_SK/cone/paper_2/cone_2_map/')
 state_name='cone'
 
 
 if not os.path.exists(directory):
     os.makedirs(directory)
 
-container = magnes.io.load(file)
+container = magnes.io.load(str(file))
 ini = list(container["PATH"])[0]
 
 
@@ -39,31 +40,31 @@ bc=[magnes.BC.PERIODIC,magnes.BC.PERIODIC,magnes.BC.FREE]
 
 
 Klist,Kaxis=mfm.file_manager(directory,
-					   params={'double':False, 'add': [np.round(np.linspace(0., 3., 61), decimals=6).tolist(),
-													   np.round(np.linspace(20, 60, 11), decimals=6).tolist()]})
+					   params={'double':False, 'add': [np.round(np.linspace(0., 0.02, 11), decimals=6).tolist(),
+													   np.round(np.linspace(0, 15, 16), decimals=6).tolist()]})
 
 #'source':'/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/xsp_map/best/'})
 
-Kx0=1000
-Kz0=-1000
+Kx0=10
+Kz0=-10
 
 for idx,Kv in enumerate(Klist,start=1):
 	system = magnes.System(primitives, representatives, size, bc)
 	origin = magnes.Vertex(cell=[0, 0, 0])
-	D = np.tan(np.pi / Kv[1])
+	D = np.tan(Kv[1]/Nz)
 	system.add(magnes.Exchange(origin, magnes.Vertex([1, 0, 0]), J, [D, 0., 0.]))
 	system.add(magnes.Exchange(origin, magnes.Vertex([0, 1, 0]), J, [0., D, 0.]))
 	system.add(magnes.Exchange(origin, magnes.Vertex([0, 0, 1]), J, [0., 0., D]))
-	system.add(magnes.Anisotropy(np.power(D, 2) * Kv[0]))
+	system.add(magnes.Anisotropy( Kv[0]))
 	Kx = np.zeros(Nz)
 	Kx[0] = Kx0
 	Kx[-1] = Kx0
-	Kx = np.power(D, 2)*Kx.reshape(1, 1, Nz, 1)
+	Kx = Kx.reshape(1, 1, Nz, 1)
 	system.add(magnes.Anisotropy(Kx, axis=[1, 0, 0]))
 	Kz = np.zeros(Nz)
 	Kz[0] = Kz0
 	Kz[-1] = Kz0
-	Kz = np.power(D, 2) * Kz.reshape(1, 1, Nz, 1)
+	Kz =  Kz.reshape(1, 1, Nz, 1)
 	system.add(magnes.Anisotropy(Kz, axis=[0, 0, 1]))
 	print(system)
 	state=system.field3D()
@@ -85,10 +86,10 @@ for idx,Kv in enumerate(Klist,start=1):
 
 	minimizer.optimize(state)
 	s=state.download()
-	container = magnes.io.container(directory +state_name+ '_{:.5f}_{:.5f}.npz'.format(Kv[0], Kv[1]))
+	container = magnes.io.container(str(directory.joinpath(state_name+ '_{:.5f}_{:.5f}.npz'.format(Kv[0], Kv[1]))))
 	container.store_system(system)
 	container["PATH"] = [s]
-	container.save(directory +state_name+ '_{:.5f}_{:.5f}.npz'.format(Kv[0], Kv[1]))
+	container.save(str(directory.joinpath(state_name+ '_{:.5f}_{:.5f}.npz'.format(Kv[0], Kv[1]))))
 
 map_info.map_info(directory)
 map_color.map_color(directory)
