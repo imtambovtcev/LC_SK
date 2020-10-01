@@ -18,8 +18,8 @@ def path(file,show=False,states=True):
         os.mkdir(save_dir)
     container = magnes.io.load(str(file))
     system = container.extract_system()
-    path=[system.field3D() for state in container["PATH"]]
-    path =magnes.path.Path([p.upload(state) for p,state in zip(path,container["PATH"])])
+    path = [system.field3D() for state in container["PATH"]]
+    path = magnes.path.Path([p.upload(state) for p,state in zip(path,container["PATH"])])
     energy_from_ref=path.energy(reference=path[-1].energy())
     energy = path.energy()
     size=container["PATH"][0].shape
@@ -58,14 +58,17 @@ def path(file,show=False,states=True):
 
 
     x=np.linspace(dist.min(),dist.max(),100)
-    f = interp1d(dist, energy_from_ref, kind='cubic')
-    plt.plot(x,f(x))
-    plt.xlabel('Distance', fontsize=16)
-    plt.ylabel(r'$\langle E \rangle$', fontsize=16)
-    plt.tight_layout()
-    plt.savefig(str(save_dir.joinpath('energy_dist_int.pdf')))
-    if show: plt.show()
-    plt.close('all')
+    try:
+        f = interp1d(dist, energy_from_ref, kind='cubic')
+        plt.plot(x,f(x))
+        plt.xlabel('Distance', fontsize=16)
+        plt.ylabel(r'$\langle E \rangle$', fontsize=16)
+        plt.tight_layout()
+        plt.savefig(str(save_dir.joinpath('energy_dist_int.pdf')))
+        if show: plt.show()
+        plt.close('all')
+    except:
+        ()
 
     print(f'max at {argrelextrema(energy_from_ref, np.greater)},\twith {energy_from_ref[argrelextrema(energy_from_ref, np.greater)]}')
     print(f'min at {argrelextrema(energy_from_ref, np.less)},\twith {energy_from_ref[argrelextrema(energy_from_ref, np.less)]}')

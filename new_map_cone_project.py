@@ -14,8 +14,8 @@ import map_file_manager as mfm
 import map_info
 import map_color
 
-file=Path('/home/ivan/LC_SK/cone/cone_2.npz')
-directory=Path('/home/ivan/LC_SK/cone/paper_2/cone_2_map/')
+file=Path('/home/ivan/LC_SK/cone/cone_0.npz')
+directory=Path('/home/ivan/LC_SK/cone/paper_3/cone_0_map/')
 state_name='cone'
 
 
@@ -27,7 +27,7 @@ ini = list(container["PATH"])[0]
 
 
 
-J=1.0;
+J=1.0
 
 size=ini.shape[0:3]
 print(size)
@@ -40,14 +40,16 @@ bc=[magnes.BC.PERIODIC,magnes.BC.PERIODIC,magnes.BC.FREE]
 
 
 Klist,Kaxis=mfm.file_manager(directory,
-					   params={'double':False, 'add': [np.round(np.linspace(0., 0.02, 11), decimals=6).tolist(),
-													   np.round(np.linspace(0, 15, 16), decimals=6).tolist()]})
+					   params={'double':False, 'add': [np.round(np.linspace(0., 0.25, 101), decimals=6).tolist(),
+													   np.round(np.linspace(0, 15, 101), decimals=6).tolist()]})
 
 #'source':'/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/xsp_map/best/'})
 
-Kx0=10
-Kz0=-10
-
+Kx0=0.5
+Kz0=-0.5
+epsilon=1.
+K=6e-12
+l=5e-6
 for idx,Kv in enumerate(Klist,start=1):
 	system = magnes.System(primitives, representatives, size, bc)
 	origin = magnes.Vertex(cell=[0, 0, 0])
@@ -55,7 +57,7 @@ for idx,Kv in enumerate(Klist,start=1):
 	system.add(magnes.Exchange(origin, magnes.Vertex([1, 0, 0]), J, [D, 0., 0.]))
 	system.add(magnes.Exchange(origin, magnes.Vertex([0, 1, 0]), J, [0., D, 0.]))
 	system.add(magnes.Exchange(origin, magnes.Vertex([0, 0, 1]), J, [0., 0., D]))
-	system.add(magnes.Anisotropy( Kv[0]))
+	system.add(magnes.Anisotropy(epsilon*Kv[0]*Kv[0]*l*l/(K*8*np.pi)))
 	Kx = np.zeros(Nz)
 	Kx[0] = Kx0
 	Kx[-1] = Kx0
@@ -91,5 +93,5 @@ for idx,Kv in enumerate(Klist,start=1):
 	container["PATH"] = [s]
 	container.save(str(directory.joinpath(state_name+ '_{:.5f}_{:.5f}.npz'.format(Kv[0], Kv[1]))))
 
-map_info.map_info(directory)
+map_info.map_info(directory,compute_negative=True)
 map_color.map_color(directory)

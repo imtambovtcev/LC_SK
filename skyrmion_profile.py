@@ -10,6 +10,7 @@ import magnes.utils
 import matplotlib.pyplot as plt
 from pathlib import Path
 from scipy.interpolate import CubicSpline
+import scipy
 
 
 def plot_state(system,s,directory,file,show_extras=False):
@@ -59,22 +60,213 @@ def plot_npz(file,show_extras=False):
 	except:
 		print('failed')
 
-def show(directory,show_extras=True):
-	directory=Path(directory)
-	if directory.is_dir():
-		print(f'{directory = }')
-		filelist = [file for file in directory.iterdir() if file.suffix == '.npz']
-		print(filelist)
-		print(len(filelist))
-		for file in filelist:
-			plot_npz(file,show_extras=show_extras)
-	else:
-		file = Path(directory)
-		if file.suffix=='.npz':
-			plot_npz(file,show_extras=show_extras)
 
+def skyrmion_profile(file,criteria=1.9,show=False):
+	file = Path(file)
+	container = magnes.io.load(str(file))
+	if 'STATE' in container:
+		s = np.array(container["STATE"])
+	else:
+		s = list(container["PATH"])[0]
+	size=[]
+	x = np.array(range(s.shape[0]), dtype='float') - s.shape[0] / 2
+	y = np.array(range(s.shape[1]), dtype='float') - s.shape[1] / 2
+	x_grid, y_grid = np.meshgrid(x, y)
+	x_grid = x_grid.T
+	y_grid = y_grid.T
+	angle_vector=[]
+	shape=[]
+	for i in range(s.shape[2]):
+		z = s[:, :, i, 0, 1]
+		cone=s[0,0,i,0,:]
+		cone_mask=np.squeeze(np.linalg.norm(s[:,:,i,0,:]-cone,axis=2)>criteria)
+		direction = s[0, 0, i, 0, :2]
+		direction = direction / np.linalg.norm(direction)
+		tan = direction[1] / direction[0]
+		angle = np.arctan2(direction[1], direction[0])/np.pi*180
+		perp_angle = angle - 90
+		perp_tan = np.tan(perp_angle/180*np.pi)
+
+		print(cone_mask.sum())
+		x_centre=np.mean(x_grid[cone_mask])
+		y_centre = np.mean(y_grid[cone_mask])
+		top_angle=np.arctan2(y_centre,x_centre)* 180 / np.pi
+		top_tan=y_centre/x_centre
+		angle_vector.append([i, angle, perp_angle, top_angle])
+		size.append([i,cone_mask.sum()])
+		interp = scipy.interpolate.interp2d(x_grid, y_grid, cone_mask, kind='linear')
+		if np.abs(tan) < 1:
+			line_x = x
+			line_y = tan * x
+		else:
+			line_y = y
+			line_x = y / tan
+		if np.abs(perp_tan) < 1:
+			perp_line_x = x
+			perp_line_y = perp_tan * x
+		else:
+			perp_line_y = y
+			perp_line_x = y / perp_tan
+		if np.abs(top_tan) < 1:
+			top_line_x = x
+			top_line_y = top_tan * x
+		else:
+			top_line_y = y
+			top_line_x = y / top_tan
+
+		top_line_z = np.array([interp(a, b) for a, b in zip(top_line_x, top_line_y)])
+		top_d_arg = [top_line_z.argmax(), top_line_z.argmin()]
+		top_d_coord = np.array([[top_line_x[top_d_arg[0]], top_line_y[top_d_arg[0]]],
+								[top_line_x[top_d_arg[1]], top_line_y[top_d_arg[1]]]])
+		top_d_r=np.linalg.norm(top_d_coord,axis=1)
+		plt.plot(top_line_x,top_line_z)
+		plt.show()
+
+		shape.append(top_d_r)
+		plt.contourf(x_grid, y_grid, cone_mask)#z
+		plt.plot(x_centre, y_centre, 'k.')
+		plt.plot(line_x, line_y, 'b')
+		plt.plot(perp_line_x, perp_line_y, 'r')
+		plt.plot(top_line_x, top_line_y, 'g')
+		plt.plot(top_line_x[top_d_arg[0]], top_line_y[top_d_arg[0]],'rx')
+		plt.plot(top_line_x[top_d_arg[1]], top_line_y[top_d_arg[1]], 'bx')
+		plt.title('layer {}'.format(i))
+		if show: plt.show()
+		plt.close('all')
+	shape=np.array(shape)
+	plt.plot(shape[:,0])
+	plt.plot(shape[:, 1])
+	plt.show()
+	print(size)
+	angle_vector = np.array(angle_vector)
+	size=np.array(size)
+	plt.plot(size[:,0],size[:,1],'.')
+	plt.xlabel('z')
+	plt.ylabel('skyrmion square')
+	plt.savefig(str(file.parent.joinpath(file.stem+'_sksquare.pdf')))
+	if show: plt.show()
+	plt.close('all')
+
+	plt.plot(angle_vector[:, 0], angle_vector[:, 1], 'r.', label='spiral angle')
+	plt.plot(angle_vector[:, 0], angle_vector[:, 2], 'g.', label='spiral angle + 90')
+	plt.plot(angle_vector[:, 0], angle_vector[:, 3], 'b.', label='skyrmion angle to z max')
+	plt.xlabel('z')
+	plt.ylabel('angle')
+	plt.legend()
+	plt.savefig(str(file.parent.joinpath(file.stem + '_angle_alt.pdf')))
+	if show: plt.show()
+	plt.close('all')
+
+def skyrmion_profile_max(file,show=False):
+	file = Path(file)
+	container = magnes.io.load(str(file))
+	if 'STATE' in container:
+		s = np.array(container["STATE"])
+	else:
+		s = list(container["PATH"])[0]
+
+	angle_vector=[]
+	size=[]
+	for i in range(s.shape[2]):
+		z = s[:, :, i, 0, 1]
+		#z=np.zeros(z.shape)
+		#z[20,1]=1
+		print(np.unravel_index(z.argmax(), z.shape))
+		point = np.unravel_index(z.argmax(), z.shape)
+		point_xy=np.array([point[0]-z.shape[0]/2,point[1]-z.shape[1]/2])
+		print(f'{point = }\t{point_xy = }\t{z[point] = }')
+		top_direction = point_xy / np.linalg.norm(point_xy)
+		top_tan=top_direction[1]/top_direction[0]
+		top_angle=np.arctan2(top_direction[1],top_direction[0])*180/np.pi
+		direction = s[0,0,i,0,:2]
+		direction=direction/np.linalg.norm(direction)
+		tan=direction[1]/direction[0]
+		angle=np.arctan2(direction[1],direction[0])/np.pi*180
+		perp_angle=angle-90
+		perp_tan=np.tan(perp_angle*np.pi/180)
+		angle_vector.append([i,angle,perp_angle,top_angle])
+		x=np.array(range(z.shape[0]),dtype='float')-z.shape[0]/2
+		y=np.array(range(z.shape[1]),dtype='float')-z.shape[1]/2
+		x_grid,y_grid=np.meshgrid(x,y)
+		x_grid=x_grid.T
+		y_grid=y_grid.T
+		interp=scipy.interpolate.interp2d(x_grid, y_grid,z, kind='linear')
+		if np.abs(tan)<1:
+			line_x=x
+			line_y=tan*x
+		else:
+			line_y = y
+			line_x = y/tan
+		if np.abs(perp_tan)<1:
+			perp_line_x=x
+			perp_line_y=perp_tan*x
+		else:
+			perp_line_y = y
+			perp_line_x = y/perp_tan
+
+		if np.abs(top_tan)<1:
+			top_line_x=x
+			top_line_y=top_tan*x
+		else:
+			top_line_y = y
+			top_line_x = y/top_tan
+		line_z = np.array([interp(a, b) for a, b in zip(line_x, line_y)])
+		perp_line_z = np.array([interp(a, b) for a, b in zip(perp_line_x, perp_line_y)])
+		top_line_z = np.array([interp(a, b) for a, b in zip(top_line_x, top_line_y)])
+		#plt.contourf(x_grid,y_grid,interp(x,y))
+		top_d_arg=[top_line_z.argmax(),top_line_z.argmin()]
+		top_d_coord=np.array([[top_line_x[top_d_arg[0]],top_line_y[top_d_arg[0]]],[top_line_x[top_d_arg[1]],top_line_y[top_d_arg[1]]]])
+		top_d=np.linalg.norm(top_d_coord[1]-top_d_coord[0])
+		size.append([i,top_d/2])
+
+		plt.contourf(x_grid, y_grid,z)
+		plt.plot(point_xy[0],point_xy[1],'k.')
+		plt.title('layer {}'.format(i))
+		plt.plot(line_x,line_y,'b')
+		plt.plot(perp_line_x, perp_line_y,'r')
+		plt.plot(top_line_x, top_line_y, 'g')
+		plt.gcf().gca().add_artist(plt.Circle([0,0],top_d/2,fill=False))
+		plt.colorbar()
+		plt.xlabel('x')
+		plt.ylabel('y')
+		plt.savefig(str(file.parent.joinpath(file.stem+'_pdf.pdf')))
+		if show: plt.show()
+		plt.close('all')
+
+		plt.plot(line_x, line_z, 'b',label='line')
+		plt.plot(perp_line_x,perp_line_z,'r',label='perp line')
+		plt.plot(top_line_x, top_line_z, 'g', label='top line')
+		plt.legend()
+		plt.xlabel('x')
+		plt.ylabel('z')
+		plt.title('layer {}'.format(i))
+		if show: plt.show()
+		plt.close('all')
+	angle_vector=np.array(angle_vector)
+	size=np.array(size)
+	#angle_vector[:, 1]=angle_vector[:, 1] / np.pi * 180
+	#angle_vector[:, 2] = angle_vector[:, 2] / np.pi * 180
+	#angle_vector[:, 3] = angle_vector[:, 3] / np.pi * 180
+	#angle_vector[angle_vector[:, 1]>90, 1]=angle_vector[angle_vector[:, 1]>90, 1]-180
+	#angle_vector[angle_vector[:, 2] > 90, 2] = angle_vector[angle_vector[:, 2] > 90, 2] - 180
+	#angle_vector[angle_vector[:, 3] > 90, 3] = angle_vector[angle_vector[:, 3] > 90, 3] - 180
+	plt.plot(angle_vector[:,0],angle_vector[:,1],'r.',label='spiral angle')
+	plt.plot(angle_vector[:, 0], angle_vector[:, 2], 'g.', label='spiral angle + 90')
+	plt.plot(angle_vector[:, 0], angle_vector[:, 3], 'b.', label='skyrmion angle to z max')
+	plt.xlabel('z')
+	plt.ylabel('angle')
+	plt.legend()
+	plt.savefig(str(file.parent.joinpath(file.stem+'_angle.pdf')))
+	if show: plt.show()
+	plt.close('all')
+	plt.plot(size[:,0],size[:,1],'.')
+	plt.xlabel('z')
+	plt.ylabel('skyrmion radius')
+	plt.savefig(str(file.parent.joinpath(file.stem+'_sksize.pdf')))
+	if show: plt.show()
+	plt.close('all')
 
 if __name__ == "__main__":
-	directory = './' if len(sys.argv) <= 1 else sys.argv[1]
-	show_extras = True if len(sys.argv) <= 2 else sys.argv[2]=='True'
-	show(directory,show_extras=show_extras)
+	show=True
+	skyrmion_profile(sys.argv[1], show=show)
+	#skyrmion_profile_max(sys.argv[1],show=show)
