@@ -363,15 +363,24 @@ def map_color(directory,show=False, point=None, plot_z_projection=True):
                 c = map == 'cone'
                 sk = map == 'skyrmion'
                 t = map == 'toron'
+                b = map == 'bober'
                 if not (np.all(sk) or np.all(np.invert(sk))):
                     state = np.zeros(c.shape)
                     state[sk] = 1.
+                    plt.contourf(x, y, state, levels=[0,1], cmap='winter', hatches=[None, '-'],extend='both', alpha=0.0)
                     plt.contour(x,y, state, levels=state_levels, cmap='autumn', hatches=['-', '/', '\\', '//'], extend='both',
                                 alpha=0.8)
                 if not (np.all(t) or np.all(np.invert(t))):
                     state = np.zeros(c.shape)
                     state[t] = 1.
+                    plt.contourf(x, y, state, levels=[0,1], cmap='winter', hatches=[None, '\\'],extend='both', alpha=0.0)
                     plt.contour(x, y, state, levels=state_levels, cmap='summer', hatches=['-', '/', '\\', '//'], extend='lower',
+                                alpha=0.8)
+                if not (np.all(b) or np.all(np.invert(b))):
+                    state = np.zeros(c.shape)
+                    state[b] = 1.
+                    plt.contourf(x, y, state, levels=[0,1], cmap='winter', hatches=[None, '/'],extend='both', alpha=0.0)
+                    plt.contour(x, y, state, levels=state_levels, cmap='winter', hatches=['-', '/', '\\', '//'], extend='lower',
                                 alpha=0.8)
                 plt.tight_layout()
                 plt.savefig(str(directory.joinpath('info/state.pdf')))

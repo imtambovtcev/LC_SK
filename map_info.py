@@ -11,6 +11,7 @@ import map_file_manager as mfm
 from scipy.interpolate import CubicSpline
 import utilities
 import magnes
+import skyrmion_profile
 
 font = {'family' : 'sans-serif',
         'size'   : 16}
@@ -158,7 +159,7 @@ def localisation(state):
     y1 = state[:, -1, :, :, :]
     y1 = y1 - y1[0]
     y1 = np.linalg.norm(y1)
-    return x0+x1+y0+y1
+    return (x0+x1+y0+y1)/(2*(state.shape[0]+state.shape[1])*state.shape[2])
 
 def map_info(directory,var={},compute_negative=False):
     print(f'{var = },{bool(var) = }')
@@ -188,6 +189,7 @@ def map_info(directory,var={},compute_negative=False):
     epu_from_ferr=np.full(K.shape[0], np.nan)
     smallest_eigenvalue=np.full(K.shape[0], np.nan)
     eigenvalue_positive=np.full(K.shape[0], np.nan)
+    skyrmion_size = np.full(K.shape[0], np.nan)
     t0=time.time()
 
     for idx,Kv in enumerate(K):
@@ -244,6 +246,12 @@ def map_info(directory,var={},compute_negative=False):
             except:()
             try:            x_tilted_period[idx]=xperiod[idx]*np.sin(angle[idx]*np.pi/180)
             except:()
+            try:
+                _,r_max=skyrmion_profile.skyrmion_profile(filename, show=False)
+                skyrmion_size[idx]=r_max[int(s.shape[2]/2)]
+                print(f'{r_max = }')
+                print(f'{skyrmion_size[idx] = }')
+            except:()
             #try:            epu_from_cone[idx]=energy_per_unit[idx]-epu_cone[idx]
             #except:()
             #try:            epu_from_ferr[idx]=energy_per_unit[idx]-epu_ferr[idx]
@@ -262,14 +270,17 @@ def map_info(directory,var={},compute_negative=False):
             except:
                 print('negative fail')
             try:
-                if local[idx]<100:
+                if local[idx]<1:
                     if abs(centre_charge[idx])<0.3 and abs(border_charge[idx])<0.3 and border_turn[idx]<20:
                         state_type[idx]='cone'
-                    elif abs(centre_charge[idx]-1)<0.3 and abs(border_charge[idx])<0.3 and border_turn[idx]<20:
+                    elif abs(centre_charge[idx]) < 0.3 and (abs(abs(border_charge[idx])-1) < 0.3 or border_turn[idx] > 20):
+                        state_type[idx] = 'bober'
+                    elif abs(abs(centre_charge[idx])-1)<0.3 and abs(border_charge[idx])<0.3 and border_turn[idx]<20:
                         state_type[idx]='toron'
-                    elif abs(centre_charge[idx] - 1) < 0.3 and (abs(border_charge[idx]-1) < 0.3 or border_turn[idx] > 20):
+                    elif abs(abs(centre_charge[idx]) - 1) < 0.3 and (abs(abs(border_charge[idx])-1) < 0.3 or border_turn[idx] > 20):
                         state_type[idx] = 'skyrmion'
                 else:
+                    print(f'{local[idx] = }')
                     state_type[idx] = np.nan
             except: ()
             try:
@@ -300,6 +311,7 @@ def map_info(directory,var={},compute_negative=False):
              energy_if_xsp=energy_if_xsp,xperiod=xperiod,x_tilted_period =x_tilted_period,
              epu_from_cone=epu_from_cone,epu_from_ferr=epu_from_ferr,
              smallest_eigenvalue=smallest_eigenvalue,eigenvalue_positive=eigenvalue_positive,
+             skyrmion_size=skyrmion_size,
              allow_pickle=True)
     structurize(str(directory),var)
 

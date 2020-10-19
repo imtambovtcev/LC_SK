@@ -2,7 +2,7 @@ import numpy as np
 from termcolor import colored
 import sys
 import os
-os.environ['MAGNES_BACKEND'] = 'numpy'
+#os.environ['MAGNES_BACKEND'] = 'numpy'
 import time
 import magnes
 import magnes.graphics

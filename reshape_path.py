@@ -12,6 +12,7 @@ import change_anisotropy
 
 load='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/path_44_min.npz'
 save='/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/path_44_min_10.npz'
+
 container = magnes.io.load(load)
 system=container.extract_system()
 primitives=system.primitives

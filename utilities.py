@@ -50,3 +50,14 @@ def state_to_path(file):
     except:
         print(f'Error at {file = }')
 
+def z_invert_state(file):
+    file = Path(file)
+    container = magnes.io.load(str(file))
+    system = container.extract_system()
+    s=container['PATH'][0]
+    if s[:,:,:,:,2].sum()<0:
+        s[:,:,:,:,2]*=-1
+    container = magnes.io.container('.npz')
+    container.store_system(system)
+    container["PATH"] = [s]
+    container.save(str(file))

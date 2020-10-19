@@ -14,8 +14,8 @@ import map_file_manager as mfm
 import map_info
 import map_color
 
-file=Path('/home/ivan/LC_SK/cone/cone_0.npz')
-directory=Path('/home/ivan/LC_SK/cone/paper_3/cone_0_map/')
+file=Path('/home/ivan/LC_SK/cone/cone_1.npz')
+directory=Path('/home/ivan/LC_SK/cone/paper_4/cone_1_map/')
 state_name='cone'
 
 
@@ -46,7 +46,7 @@ Klist,Kaxis=mfm.file_manager(directory,
 #'source':'/media/ivan/64E21891E2186A16/Users/vano2/Documents/LC_SK/spx/xsp_map/best/'})
 
 Kx0=0.5
-Kz0=-0.5
+Kz0=-1
 epsilon=1.
 K=6e-12
 l=5e-6

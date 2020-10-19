@@ -27,9 +27,9 @@ def path(file,show=False,states=True):
     epu=energy/nspin
     epu_from_ref= energy_from_ref / nspin
     dist=path.distances()
-
-    np.savez(str(save_dir.joinpath('energy.npz')), dist=dist, dist_norm=dist/dist.max(), energy=energy, energy_from_ref=energy_from_ref, epu=epu,
-             epu_from_ref=epu_from_ref)
+    maxz = [np.max(np.abs(s[:, :, :, :, 2])) for s in list(path)]
+    np.savez(str(save_dir.joinpath('info.npz')), dist=dist, dist_norm=dist/dist.max(), energy=energy, energy_from_ref=energy_from_ref, epu=epu,
+             epu_from_ref=epu_from_ref, z_max=maxz)
 
     plt.plot(energy_from_ref,'.')
     plt.xlabel('State number', fontsize=16)
@@ -73,7 +73,6 @@ def path(file,show=False,states=True):
     print(f'max at {argrelextrema(energy_from_ref, np.greater)},\twith {energy_from_ref[argrelextrema(energy_from_ref, np.greater)]}')
     print(f'min at {argrelextrema(energy_from_ref, np.less)},\twith {energy_from_ref[argrelextrema(energy_from_ref, np.less)]}')
 
-    maxz=[np.max(s[:,:,:,:,2]) for s in list(path)]
     plt.plot(maxz,'.')
     plt.xlabel('N', fontsize=16)
     plt.ylabel(r'$z_{max}$', fontsize=16)
@@ -86,13 +85,13 @@ def path(file,show=False,states=True):
 
 
 def show_path(directory,show=False,states=True):
-    print(sys.argv[1])
+    directory=Path(directory)
     if os.path.isdir(directory):
         filelist = [file for file in os.listdir(directory) if file[-4:]== '.npz' ]
         for file_from_list in filelist:
-            path(Path(file_from_list),show=show,states=True)
+            path(Path(file_from_list),show=show,states=states)
     elif directory.suffix == '.npz':
-        path(directory,show=show,states=True)
+        path(directory,show=show,states=states)
     else:
         print('Invalid input')
 

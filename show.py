@@ -22,8 +22,11 @@ def plot_state(system,s,directory,file,show_extras=False):
 	fig, _, _ = magnes.graphics.plot_field3D(system, state, slice2D='yz', sliceN=int(system.size[0] / 2))
 	fig.savefig(directory.joinpath(file+'_yz.pdf'), bbox_inches='tight')
 	plt.close('all')
-	fig, _, _ = magnes.graphics.plot_field3D(system, state, slice2D='xy', sliceN=int(0*system.size[2] / 2))
-	fig.savefig(directory.joinpath(file+'_xy.pdf'), bbox_inches='tight')
+	fig, _, _ = magnes.graphics.plot_field3D(system, state, slice2D='xy', sliceN=int(system.size[2] / 2))
+	fig.savefig(directory.joinpath(file + '_xy.pdf'), bbox_inches='tight')
+	plt.close('all')
+	fig, _, _ = magnes.graphics.plot_field3D(system, state, slice2D='xy', sliceN=0)
+	fig.savefig(directory.joinpath(file+'_xy_0.pdf'), bbox_inches='tight')
 	plt.close('all')
 	if show_extras:
 		plt.plot(s[int(s.shape[0]/2),int(s.shape[1]/2),:,0,2])

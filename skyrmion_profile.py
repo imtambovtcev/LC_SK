@@ -13,7 +13,7 @@ from scipy.interpolate import CubicSpline
 import scipy
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.ticker import MaxNLocator
-
+import scipy.signal as signal
 
 def plot_state(system,s,directory,file,show_extras=False):
 	directory=Path(directory)
@@ -64,6 +64,9 @@ def plot_npz(file,show_extras=False):
 
 
 def skyrmion_profile(file,criteria=1.9,show=False):
+#	if isinstance(file,np.ndarray):
+#		s=file
+#	else:
 	file = Path(file)
 	container = magnes.io.load(str(file))
 	if 'STATE' in container:
@@ -82,76 +85,94 @@ def skyrmion_profile(file,criteria=1.9,show=False):
 	state_diff=np.linalg.norm(np.squeeze(s)-cone,axis=3)
 	skyrmion_mask=state_diff>criteria
 	#print(f'{skyrmion_mask.shape =  },{skyrmion_mask.sum() = }')
-	x_centre = np.mean(x_grid[skyrmion_mask[:,:,0]])
-	y_centre = np.mean(y_grid[skyrmion_mask[:,:,0]])
-	#print(f'{x_centre =},{y_centre = }')
-	x=x-x_centre
-	y = y - y_centre
-	x_grid, y_grid, z_grid = np.meshgrid(x, y, z, indexing='ij')
-	#print(f'{x_grid.shape = },{y_grid.shape = },{z_grid.shape = }')
+	if skyrmion_mask.sum()!=0:
+		x_centre = np.nan
+		y_centre = np.nan
+		print(skyrmion_mask[:,:,0].sum())
+		print(skyrmion_mask.sum())
+		if skyrmion_mask[:,:,0].sum()>5:
+			x_centre = np.mean(x_grid[skyrmion_mask[:,:,0]])
+			y_centre = np.mean(y_grid[skyrmion_mask[:,:,0]])
+		elif skyrmion_mask.sum()>40:
+			x_2d_grid, y_2d_grid = np.meshgrid(x, y, indexing='ij')
+			x_centre = np.mean(x_2d_grid[skyrmion_mask.sum(axis=2) > 0])
+			y_centre = np.mean(y_2d_grid[skyrmion_mask.sum(axis=2) > 0])
+		if not (np.isnan(x_centre)) and not (np.isnan(y_centre)):
+			x = x - x_centre
+			y = y - y_centre
+		x_grid, y_grid, z_grid = np.meshgrid(x, y, z, indexing='ij')
+		# print(f'{x_grid.shape = },{y_grid.shape = },{z_grid.shape = }')
+		x_2d_grid, y_2d_grid = np.meshgrid(x, y, indexing='ij')
+		if show:
+			try:
+				r_grid=np.sqrt(x_grid*x_grid+y_grid*y_grid)
+				theta_grid=np.arctan2(y_grid, x_grid)
+				fig = plt.figure()
+				ax = fig.add_subplot(111, projection='3d')
+				ax.scatter(x_grid[skyrmion_mask], y_grid[skyrmion_mask], z_grid[skyrmion_mask],c=theta_grid[skyrmion_mask]/theta_grid[skyrmion_mask].max())
+				ax.set_xlabel('X')
+				ax.set_ylabel('Y')
+				ax.set_zlabel('Z')
+				plt.show()
+			except:
+				plt.close('all')
+		coord = []
+		for i in range(s.shape[2]):
+			is_sk=skyrmion_mask[:,:,i]
+			r_2d_grid=np.sqrt(x_2d_grid*x_2d_grid+y_2d_grid*y_2d_grid)
+			r_2d_grid[np.invert(is_sk)]=np.nan
+			r_max=np.nanmax(r_2d_grid)
+			r_min = np.nanmin(r_2d_grid)
+			#print(f'{r_min = },{r_max = }')
+			if r_min<=1:
+				r_max_arg=np.unravel_index(np.nanargmax(r_2d_grid),r_2d_grid.shape)
+				theta_grid = np.arctan2(y_2d_grid, x_2d_grid)
+				theta_max=np.arctan2(y_2d_grid[r_max_arg],x_2d_grid[r_max_arg])
 
-	x_2d_grid, y_2d_grid = np.meshgrid(x, y, indexing='ij')
-	coord = []
-	for i in range(s.shape[2]):
-		is_sk=skyrmion_mask[:,:,i]
-		r_2d_grid=np.sqrt(x_2d_grid*x_2d_grid+y_2d_grid*y_2d_grid)
-		r_2d_grid[np.invert(is_sk)]=np.nan
-		r_max=np.nanmax(r_2d_grid)
-		r_min = np.nanmin(r_2d_grid)
-		#print(f'{r_min = },{r_max = }')
-		if r_min<=1:
-			r_max_arg=np.unravel_index(np.nanargmax(r_2d_grid),r_2d_grid.shape)
-			theta_grid = np.arctan2(y_2d_grid, x_2d_grid)
-			theta_max=np.arctan2(y_2d_grid[r_max_arg],x_2d_grid[r_max_arg])
+				fr=0.1
+				if theta_max>fr:
+					theta_mask=np.logical_and(theta_grid > theta_max- np.pi- fr, theta_grid < theta_max- np.pi+ fr )
+				elif theta_max < -fr:
+					theta_mask = np.logical_and(theta_grid > theta_max + np.pi - fr,
+												theta_grid < theta_max + np.pi + fr)
+				else:
+					theta_mask = np.logical_and(theta_grid > theta_max + np.pi - fr,
+												theta_grid < theta_max - np.pi + fr)
+				#plt.plot(x_2d_grid[theta_mask],y_2d_grid[theta_mask],'.')
+				#plt.xlim([-50,50])
+				#plt.ylim([-50, 50])
+				#plt.show()
+				r_2d_grid[np.invert(theta_mask)]=np.nan
+				r_min_=-np.nanmax(r_2d_grid)
+				if np.isnan(r_min_):
+					r_min=-r_min
+				else:
+					r_min = r_min_
+		#		print(f'{i = },{r_min = },{r_max = }')
+			coord.append([r_min,r_max])
 
-			fr=0.1
-			if theta_max>fr:
-				theta_mask=np.logical_and(theta_grid > theta_max- np.pi- fr, theta_grid < theta_max- np.pi+ fr )
-			elif theta_max < -fr:
-				theta_mask = np.logical_and(theta_grid > theta_max + np.pi - fr,
-											theta_grid < theta_max + np.pi + fr)
-			else:
-				theta_mask = np.logical_and(theta_grid > theta_max + np.pi - fr,
-											theta_grid < theta_max - np.pi + fr)
-			#plt.plot(x_2d_grid[theta_mask],y_2d_grid[theta_mask],'.')
-			#plt.xlim([-50,50])
-			#plt.ylim([-50, 50])
-			#plt.show()
-			r_2d_grid[np.invert(theta_mask)]=np.nan
-			r_min_=-np.nanmax(r_2d_grid)
-			if np.isnan(r_min_):
-				r_min=-r_min
-			else:
-				r_min = r_min_
-	#		print(f'{i = },{r_min = },{r_max = }')
-		coord.append([r_min,r_max])
+		coord = np.array(coord)
+		r_min = coord[:, 0]
+		r_max = coord[:, 1]
+		if np.all(np.invert(np.isnan(r_min))) and np.all(np.invert(np.isnan(r_max))):
+			r_min=signal.wiener(r_min)
+			r_max = signal.wiener(r_max)
 
-	coord = np.array(coord)
-	r_min = coord[:, 0]
-	r_max = coord[:, 1]
+		ax = plt.figure().gca()
+		z_grid=np.array(range(len(r_min)))
+		ax.plot(r_min[np.invert(np.isnan(r_min))],z_grid[np.invert(np.isnan(r_min))], 'b.',label='$r_{min}$')
+		ax.plot(r_max[np.invert(np.isnan(r_max))],z_grid[np.invert(np.isnan(r_max))], 'r.',label='$r_{max}$')
+		ax.set_ylabel('z')
+		ax.set_xlabel('r')
+		ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+		plt.legend()
+		plt.savefig(str(file.parent.joinpath(file.stem + '_r.pdf')))
+		if show: plt.show()
+		plt.close('all')
 
-	ax = plt.figure().gca()
-	ax.plot(r_min, 'b.')
-	ax.plot(r_max, 'r.')
-	ax.set_xlabel('z')
-	ax.set_ylabel('r')
-	ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-	plt.savefig(str(file.parent.joinpath(file.stem + '_r.pdf')))
-	if show: plt.show()
-	plt.close('all')
-
-	if show:
-		r_grid=np.sqrt(x_grid*x_grid+y_grid*y_grid)
-		theta_grid=np.arctan2(y_grid, x_grid)
-		fig = plt.figure()
-		ax = fig.add_subplot(111, projection='3d')
-		ax.scatter(x_grid[skyrmion_mask], y_grid[skyrmion_mask], z_grid[skyrmion_mask],c=theta_grid[skyrmion_mask]/theta_grid[skyrmion_mask].max())
-		ax.set_xlabel('X Label')
-		ax.set_ylabel('Y Label')
-		ax.set_zlabel('Z Label')
-		plt.show()
-
-	return r_min,r_max
+		return r_min,r_max
+	else:
+		return np.nan, np.nan
 
 # directions
 
@@ -353,6 +374,13 @@ def skyrmion_profile_max(file,show=False):
 	plt.close('all')
 
 if __name__ == "__main__":
-	show=False
-	print(skyrmion_profile(sys.argv[1], show=show))
+	show=True
+	file=Path(sys.argv[1])
+	if file.suffix=='.npz':
+		print(skyrmion_profile(file, show=show))
+	elif file.is_dir():
+		data=[]
+		for f in file.iterdir():
+			if f.suffix == '.npz':
+				print(skyrmion_profile(f, show=show))
 	#skyrmion_profile_max(sys.argv[1],show=show)
