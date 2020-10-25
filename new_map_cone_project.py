@@ -14,8 +14,8 @@ import map_file_manager as mfm
 import map_info
 import map_color
 
-file=Path('/home/ivan/LC_SK/cone/cone_1.npz')
-directory=Path('/home/ivan/LC_SK/cone/paper_4/cone_1_map/')
+file=Path('/home/ivan/LC_SK/cone/cone_3.npz')
+directory=Path('/home/ivan/LC_SK/cone/paper_4/cone_3_map/')
 state_name='cone'
 
 
@@ -84,8 +84,9 @@ for idx,Kv in enumerate(Klist,start=1):
 		reporters.append(magnes.graphics.VectorStateReporter3D(slice2D='xy',sliceN=int(Nz/2)))
 		reporters.append(magnes.graphics.VectorStateReporter3D(slice2D='xy',sliceN=0))
 		reporters.append(magnes.graphics.VectorStateReporter3D(slice2D='xz',sliceN=int(SZ/2)))
-	minimizer=magnes.StateNCG(system, reference=None, stepsize=alpha, maxiter=None, maxtime=200, precision=precision, reporter=magnes.MultiReporter(reporters), catcher=catcher)
-
+	#minimizer=magnes.StateNCG(system, reference=None, stepsize=alpha, maxiter=None, maxtime=200, precision=precision, reporter=magnes.MultiReporter(reporters), catcher=catcher)
+	minimizer = magnes.StateGDwM(system, reference=None, stepsize=alpha, maxiter=None, maxtime=200, precision=precision,
+								reporter=magnes.MultiReporter(reporters), catcher=catcher)
 	minimizer.optimize(state)
 	s=state.download()
 	container = magnes.io.container(str(directory.joinpath(state_name+ '_{:.5f}_{:.5f}.npz'.format(Kv[0], Kv[1]))))

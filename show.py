@@ -34,7 +34,7 @@ def plot_state(system,s,directory,file,show_extras=False):
 		plt.ylabel(r'$m_z$')
 		plt.savefig(directory.joinpath(file + '_z.pdf'), bbox_inches='tight')
 		plt.close('all')
-		plt.plot(s[int(s.shape[0] / 2), int(s.shape[1] / 2), :, 0, 1])
+		plt.plot(s[int(s.shape[0] / 2), int(s.shape[1] / 2), :, 0, 0])
 		plt.ylabel(r'$m_x$')
 		plt.xlabel(r'$z$')
 		plt.savefig(directory.joinpath(file + '_x.pdf'), bbox_inches='tight')
