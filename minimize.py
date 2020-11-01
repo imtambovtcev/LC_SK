@@ -23,7 +23,7 @@ def blockPrint():
 def enablePrint():
     sys.stdout = sys.__stdout__
 
-def change_shape(state,xsize):
+def change_x_shape(state, xsize):
     size0 = list(state.shape)
     ini = np.zeros([xsize, size0[1], size0[2], 1, 3])
     # 2d
@@ -57,6 +57,50 @@ def change_shape(state,xsize):
                     ini[x, y, z, 0, 0] = interp_x(x /(xsize-1), z / (size0[2]-1))
                     ini[x, y, z, 0, 1] = interp_y(x /(xsize-1), z / (size0[2]-1))
                     ini[x, y, z, 0, 2] = interp_z(x /(xsize-1), z / (size0[2]-1))
+    return ini
+
+def change_y_shape(state, ysize):
+    size0 = list(state.shape)
+    ini = np.zeros([size0[0], ysize, size0[1], 1, 3])
+
+    sx = state[:, 0, :, 0, 0]
+    sy = state[:, 0, :, 0, 1]
+    sz = state[:, 0, :, 0, 2]
+    interp_x = scipy.interpolate.interp2d(np.linspace(0, 1, size0[0], endpoint=True),
+                                          np.linspace(0, 1, size0[2], endpoint=True), sx.T)
+    interp_y = scipy.interpolate.interp2d(np.linspace(0, 1, size0[0], endpoint=True),
+                                          np.linspace(0, 1, size0[2], endpoint=True), sy.T)
+    interp_z = scipy.interpolate.interp2d(np.linspace(0, 1, size0[0], endpoint=True),
+                                          np.linspace(0, 1, size0[2], endpoint=True), sz.T)
+    for x in range(size0[0]):
+        for y in range(ysize):
+            for z in range(size0[2]):
+                #print(f'{xsize-1 = }{size0[2]-1 = })
+                ini[x, y, z, 0, 0] = interp_x(x/(size0[0]-1), y / (ysize-1))
+                ini[x, y, z, 0, 1] = interp_y(x /(size0[0]-1),y / (ysize-1))
+                ini[x, y, z, 0, 2] = interp_z(x /(size0[0]-1),y / (ysize-1))
+    return ini
+
+def change_z_shape(state, zsize):
+    size0 = list(state.shape)
+    ini = np.zeros([size0[0], size0[1], zsize, 1, 3])
+
+    sx = state[:, 0, :, 0, 0]
+    sy = state[:, 0, :, 0, 1]
+    sz = state[:, 0, :, 0, 2]
+    interp_x = scipy.interpolate.interp2d(np.linspace(0, 1, size0[0], endpoint=True),
+                                          np.linspace(0, 1, size0[2], endpoint=True), sx.T)
+    interp_y = scipy.interpolate.interp2d(np.linspace(0, 1, size0[0], endpoint=True),
+                                          np.linspace(0, 1, size0[2], endpoint=True), sy.T)
+    interp_z = scipy.interpolate.interp2d(np.linspace(0, 1, size0[0], endpoint=True),
+                                          np.linspace(0, 1, size0[2], endpoint=True), sz.T)
+    for x in range(size0[0]):
+        for y in range(size0[1]):
+            for z in range(zsize):
+                #print(f'{xsize-1 = }{size0[2]-1 = }')
+                ini[x, y, z, 0, 0] = interp_x(x/(size0[0]-1), z / (zsize-1))
+                ini[x, y, z, 0, 1] = interp_y(x /(size0[0]-1),z / (zsize-1))
+                ini[x, y, z, 0, 2] = interp_z(x /(size0[0]-1),z / (zsize-1))
     return ini
 
 def minimize(ini,J=1.,D=np.tan(np.pi/10),Kbulk=0.,Ksurf=0.,
@@ -101,7 +145,7 @@ def minimize_from_file(directory,load_file,save_file,J=1.,D=np.tan(np.pi/10),Kbu
     else:
         ini = list(container["PATH"])[0]
     if reshape:
-        ini=change_shape(ini,reshape)
+        ini=change_x_shape(ini, reshape)
     system,s,energy=minimize(ini,J=J,D=D,Kbulk=Kbulk,Ksurf=Ksurf, precision = precision)
     print(f'{np.mean(np.abs(s[:,:,:,0,0])) = }')
     container = magnes.io.container(str(directory.joinpath(save_file)))
@@ -118,7 +162,7 @@ def minimize_from_file(directory,load_file,save_file,J=1.,D=np.tan(np.pi/10),Kbu
 def minimize_from_state(directory,load_state,save_file,J=1.,D=np.tan(np.pi/10),Kbulk=0.,Ksurf=0.,reshape=None,z_max_proj=None, precision = 1e-7):
     ini = load_state
     if reshape:
-        ini=change_shape(ini,reshape)
+        ini=change_x_shape(ini, reshape)
     system,s,energy=minimize(ini,J=J,D=D,Kbulk=Kbulk,Ksurf=Ksurf, precision = precision)
     print(f'{np.mean(np.abs(s[:,:,:,0,0])) = }')
     container = magnes.io.container(str(directory.joinpath(save_file)))

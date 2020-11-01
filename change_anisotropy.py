@@ -60,7 +60,7 @@ def change_anisotropy(file,save,K_factor):
         bc = old_system.bc
 
         system = magnes.System(primitives, representatives, size, bc)
-        origin = magnes.Vertex(cell=[0, 0, 0])
+
         for ex in exchange:
             system.add(ex)
         system.set_external_field(H)

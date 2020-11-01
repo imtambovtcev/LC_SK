@@ -17,10 +17,11 @@ from pathlib import Path
 from termcolor import colored
 from minimize import *
 
-initial = Path('/media/ivan/64E21891E2186A16/LC_SK/new_spx/20/1/best/matspx_-0.10000_5.00000.npz')
-directory = Path('/media/ivan/64E21891E2186A16/LC_SK/new_spx/-0.1_5/st/1/')
+initial = Path('/home/ivan/LC_SK/initials/1/best/matspx_-0.10000_5.00000.npz')
+directory = Path('/home/ivan/LC_SK/new_spx/-0.1_5/st/1/')
 print(f'{initial = }')
 print(f'{directory = }')
+
 
 make_map_from_file(save_dir=directory,
                    KDbulk_list=np.linspace(-0.1, -0.1, 1), #(0, -2.,41)(0, -0.5,11)(0.0, -9, 1801)
