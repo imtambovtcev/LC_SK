@@ -128,3 +128,15 @@ def get_size(file):
     container = magnes.io.load(str(file))
     s = container['PATH'][0]
     return s.shape[:3]
+
+def get_J(file):
+    file = Path(file)
+    container = magnes.io.load(str(file))
+    system=container.extract_system()
+    return system.exchange[0]
+
+def get_D(file):
+    file = Path(file)
+    container = magnes.io.load(str(file))
+    system=container.extract_system()
+    return system.exchange[0]

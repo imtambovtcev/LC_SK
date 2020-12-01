@@ -338,7 +338,7 @@ def set_xperiod_point(Kbulk_D,Ksurf_D,initials_set,directory,state_name='matspx'
             os.path.join(str(directory), state_name + '_{:.5f}_{:.5f}_{:.5f}.npz'.format(Kbulk_D, Ksurf_D, p)))
     return energy
 
-def make_map_from_file(save_dir,KDbulk_list,KDsurf_list, ref,period_N=1,max_steps_from_minimum = 5, z_max_proj = np.infty,max_period = np.infty,reverse = True, precision = 1e-7,state_name = 'matspx'):
+def make_map_from_file_x_minimisation(save_dir,KDbulk_list,KDsurf_list, ref,period_N=1,max_steps_from_minimum = 5, z_max_proj = np.infty,max_period = np.infty,reverse = True, precision = 1e-7,state_name = 'matspx'):
     initial = Path(ref)
     directory = Path(save_dir)
 
@@ -399,9 +399,8 @@ def make_map_from_file(save_dir,KDbulk_list,KDsurf_list, ref,period_N=1,max_step
                               max_period=max_period, precision = precision)
 
 
-def make_map_from_map(save_dir, ref_dir,initial_period_N=1,period_N=1,max_steps_from_minimum = 5, z_max_proj = np.infty,max_period = np.infty,reverse = True, precision = 1e-7):
+def make_map_by_multiplication_x_minimisation(save_dir, ref_dir,initial_period_N=1,period_N=1,max_steps_from_minimum = 5, z_max_proj = np.infty,max_period = np.infty,reverse = True, precision = 1e-7,state_name = 'matspx'):
     directory = Path(save_dir)
-    state_name = 'matspx'
 
     if not os.path.exists(directory):
         os.makedirs(directory)
@@ -434,3 +433,29 @@ def make_map_from_map(save_dir, ref_dir,initial_period_N=1,period_N=1,max_steps_
                               state_name=state_name,
                               period_N=period_N, max_steps_from_minimum=max_steps_from_minimum, z_max_proj=z_max_proj,
                               max_period=max_period, precision = precision)
+
+def make_map_from_file(save_dir,KDbulk_list,KDsurf_list, ref,reverse = True, precision = 1e-7,state_name = 'matspx'):
+    initial = Path(ref)
+    directory = Path(save_dir)
+
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    Klist, Kaxis = mfm.file_manager(directory,
+                                    params={'double': False,
+                                            'add': [np.round(KDbulk_list, decimals=5).tolist(),
+                                                    np.round(KDsurf_list, decimals=5).tolist()]
+                                            }, dimension=2
+                                    )
+
+
+    Klist = np.array(sorted(Klist.tolist(), key=lambda x: [-x[1], x[0]], reverse=reverse))
+
+    for idx, Kv in enumerate(Klist, start=1):
+        system, s, energy = minimize(ini=initial, J=J, D=D, Kbulk=np.power(D, 2) * Kv[0], Ksurf=np.power(D, 2) * Kv[1],
+                                     precision=1e-5)
+        container = magnes.io.container(str(directory.joinpath(state_name + '_{:.5f}_{:.5f}.npz'.format(Kv[0], Kv[1]))))
+        container.store_system(system)
+        container['PATH'] = np.array([s])
+        container['ENERGY'] = energy
+        container.save(str(directory.joinpath(state_name + '_{:.5f}_{:.5f}.npz'.format(Kv[0], Kv[1]))))
