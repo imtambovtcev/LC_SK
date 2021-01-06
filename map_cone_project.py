@@ -50,6 +50,7 @@ Kz0=-1
 epsilon=1.
 K=6e-12
 l=5e-6
+
 for idx,Kv in enumerate(Klist,start=1):
 	system = magnes.System(primitives, representatives, size, bc)
 	origin = magnes.Vertex(cell=[0, 0, 0])

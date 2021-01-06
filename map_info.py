@@ -168,6 +168,11 @@ def map_info(directory,var={},compute_negative=False):
 
     state_type=np.full(K.shape[0],np.nan,dtype=object)
     energy=np.full(K.shape[0],np.nan)
+    energy_original = np.full(K.shape[0], np.nan)
+    energy_J = np.full(K.shape[0], np.nan)
+    energy_D = np.full(K.shape[0], np.nan)
+    energy_K = np.full(K.shape[0], np.nan)
+    energy_H = np.full(K.shape[0], np.nan)
     energy_per_unit = np.full(K.shape[0], np.nan)
     local=np.full(K.shape[0],np.nan)
     centre_charge=np.full(K.shape[0],np.nan)
@@ -212,6 +217,21 @@ def map_info(directory,var={},compute_negative=False):
                 energy[idx] = state.energy_contributions_sum()['total']\
                               -s.shape[0]*s.shape[1]*(s.shape[2]-2)*3-s.shape[0]*s.shape[1]*5
                 energy_per_unit[idx]=energy[idx]/(s.shape[0]*s.shape[1]*s.shape[2])
+            except:()
+            try:
+                energy_original[idx] = state.energy_contributions_sum()['total']
+            except:()
+            try:
+                energy_J[idx] = state.energy_contributions_sum()['Heisenberg']
+            except:()
+            try:
+                energy_D[idx] = state.energy_contributions_sum()['DM']
+            except:()
+            try:
+                energy_K[idx] = state.energy_contributions_sum()['anisotropy']
+            except:()
+            try:
+                energy_H[idx] = state.energy_contributions_sum()['Zeeman']
             except:()
             try: centre_charge[idx]=toplogical_charge(system, s, int(s.shape[2] / 2))
             except:()
@@ -302,7 +322,9 @@ def map_info(directory,var={},compute_negative=False):
         os.makedirs(str(directory.joinpath('info/')))
     print(f'{K.shape = },{energy_if_xsp.shape = }')
     np.savez(str(directory.joinpath('info/map_info.npz')), K=K,
-             energy=energy,energy_per_unit=energy_per_unit,state_type=state_type, state_name=state_name,
+             energy=energy,energy_per_unit=energy_per_unit,energy_original=energy_original,
+             energy_J=energy_J,energy_D=energy_D,energy_K=energy_K,energy_H=energy_H,
+             state_type=state_type, state_name=state_name,
              localisation=local,centre_charge=centre_charge,border_charge=border_charge,border_turn=border_turn,
              mean_z_projection=mean_z_projection,mean_z_centre_projection=mean_z_centre_projection,
              mean_z_abs_projection=mean_z_abs_projection,mean_z_centre_abs_projection=mean_z_centre_abs_projection,
