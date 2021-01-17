@@ -182,6 +182,8 @@ def map_info(directory,var={},compute_negative=False):
     mean_z_abs_projection = np.full(K.shape[0], np.nan)
     mean_z_centre_projection = np.full(K.shape[0], np.nan)
     mean_z_centre_abs_projection = np.full(K.shape[0], np.nan)
+    mean_x_projection = np.full(K.shape[0], np.nan)
+    mean_x_abs_projection = np.full(K.shape[0], np.nan)
     mean_x_centre_abs_projection = np.full(K.shape[0], np.nan)
     mean_x_centre_abs_projection_angle = np.full(K.shape[0], np.nan)
     angle = np.full(K.shape[0], np.nan)
@@ -246,6 +248,10 @@ def map_info(directory,var={},compute_negative=False):
             except:()
             try:            mean_z_centre_abs_projection[idx] = np.sum(np.abs(np.dot(s[:,:,int(s.shape[2]/2)],
                                                                           np.array([0., 0., 1.])))) / (s.shape[0]*s.shape[1])
+            except:()
+            try:            mean_x_projection[idx]=np.sum(np.dot(s,np.array([1.,0.,0.])))/(s.size/3)
+            except:()
+            try:            mean_x_abs_projection[idx] = np.sum(np.abs(np.dot(s,np.array([1.,0.,0.]))))/(s.size/3)
             except:()
             try:            mean_x_centre_abs_projection[idx] = np.sum(np.abs(np.dot(s[:,:,int(s.shape[2]/2)],
                                                                           np.array([1., 0., 0.])))) / (s.shape[0]*s.shape[1])
@@ -328,6 +334,7 @@ def map_info(directory,var={},compute_negative=False):
              localisation=local,centre_charge=centre_charge,border_charge=border_charge,border_turn=border_turn,
              mean_z_projection=mean_z_projection,mean_z_centre_projection=mean_z_centre_projection,
              mean_z_abs_projection=mean_z_abs_projection,mean_z_centre_abs_projection=mean_z_centre_abs_projection,
+             mean_x_projection=mean_x_projection,mean_x_abs_projection=mean_x_abs_projection,
              mean_x_centre_abs_projection=mean_x_centre_abs_projection,
              mean_x_centre_abs_projection_angle=mean_x_centre_abs_projection_angle,angle=angle,zperiod=zperiod,zturns=zturns,
              energy_if_xsp=energy_if_xsp,xperiod=xperiod,x_tilted_period =x_tilted_period,

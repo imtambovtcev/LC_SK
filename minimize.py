@@ -106,7 +106,7 @@ def change_z_shape(state, zsize):
 def minimize(ini,J=1.,D=np.tan(np.pi/10),Kbulk=0.,Ksurf=0.,
              primitives = [(1., 0., 0.), (0., 1., 0.), (0., 0., 1.)],representatives = [(0., 0., 0.)],
              bc = [magnes.BC.PERIODIC, magnes.BC.PERIODIC, magnes.BC.FREE],
-             maxtime=1000, alpha = 0.5, precision = 1e-7,catcherN=1000):
+             maxtime=None,maxiter = None, alpha = 0.5, precision = 1e-7,catcherN=1000):
     size = list(ini.shape)[:3]
     Nz = ini.shape[2]
     system = magnes.System(primitives, representatives, size, bc)
@@ -127,7 +127,7 @@ def minimize(ini,J=1.,D=np.tan(np.pi/10),Kbulk=0.,Ksurf=0.,
     catcher = magnes.EveryNthCatcher(catcherN)
 
     reporters = []  # [magnes.TextStateReporter()]#,magnes.graphics.VectorStateReporter3D(slice2D='xz',sliceN=0)]
-    minimizer = magnes.StateNCG(system, reference=None, stepsize=alpha, maxiter=None, maxtime=200, precision=precision,
+    minimizer = magnes.StateNCG(system, reference=None, stepsize=alpha, maxiter=maxiter, maxtime=maxtime, precision=precision,
                                 reporter=magnes.MultiReporter(reporters), catcher=catcher)
     blockPrint()
     minimizer.optimize(state)
@@ -135,7 +135,7 @@ def minimize(ini,J=1.,D=np.tan(np.pi/10),Kbulk=0.,Ksurf=0.,
     return system,state.download(),state.energy_contributions_sum()['total']
 
 
-def minimize_from_file(directory,load_file,save_file,J=1.,D=np.tan(np.pi/10),Kbulk=0.,Ksurf=0.,reshape=None,z_max_proj=None, precision = 1e-7, boundary=['P','P','F']):
+def minimize_from_file(directory,load_file,save_file,J=1.,D=np.tan(np.pi/10),Kbulk=0.,Ksurf=0.,reshape=None,z_max_proj=None, precision = 1e-7, maxiter = None, boundary=['P','P','F']):
     directory=Path(directory)
     load_file=Path(load_file)
     save_file=Path(save_file)
@@ -147,7 +147,7 @@ def minimize_from_file(directory,load_file,save_file,J=1.,D=np.tan(np.pi/10),Kbu
     if reshape:
         ini=change_x_shape(ini, reshape)
     bc = [magnes.BC.PERIODIC if i == 'P' else magnes.BC.FREE for i in boundary]
-    system,s,energy=minimize(ini,J=J,D=D,Kbulk=Kbulk,Ksurf=Ksurf, precision = precision, bc=bc)
+    system,s,energy=minimize(ini,J=J,D=D,Kbulk=Kbulk,Ksurf=Ksurf, precision = precision,maxiter = maxiter, bc=bc)
     print(f'{np.mean(np.abs(s[:,:,:,0,0])) = }')
     container = magnes.io.container(str(directory.joinpath(save_file)))
     container.store_system(system)
@@ -295,16 +295,16 @@ def get_reference(K,K_list,reverse=False):
     ref = [ i for i in ref if i[0] == ref[0][0] and i[1] == ref[0][1] ]
     return ref
 
-def set_xperiod_point(Kbulk_D,Ksurf_D,initials_set,directory,state_name='matspx',period_N=1,max_steps_from_minimum = 5, z_max_proj = np.infty,max_period = np.infty, precision = 1e-7, boundary=['P','P','F']):
+def set_xperiod_point(Kbulk_D,Ksurf_D,initials_set,directory,state_name='matspx',period_N=1,max_steps_from_minimum = 5, z_max_proj = np.infty,max_period = np.infty, precision = 1e-7,D=np.tan(np.pi/10), boundary=['P','P','F']):
     energy = []
     for period,initial in initials_set:
         energy.append([period, *minimize_from_state(directory=Path(''),
                                                    load_state=initial,
                                                    save_file=os.path.join(str(directory), state_name +
                                                                           '_{:.5f}_{:.5f}_{:.5f}.npz'.format(Kbulk_D, Ksurf_D, period)),
-                                                   Kbulk=np.power(np.tan(np.pi / 10), 2) * Kbulk_D,
-                                                   Ksurf=np.power(np.tan(np.pi / 10), 2) * Ksurf_D,
-                                                   z_max_proj=z_max_proj, precision = precision, boundary=boundary)])
+                                                   Kbulk=np.power(D, 2) * Kbulk_D,
+                                                   Ksurf=np.power(D, 2) * Ksurf_D,
+                                                   z_max_proj=z_max_proj, precision = precision, boundary=boundary,D=D)])
     energy=np.array(energy)
     energy, pb, n, period, ref, nnan_energy, wrong_energy = next_point(energy, max_steps_from_minimum, period_N,
                                                                        z_max_proj)
@@ -315,10 +315,10 @@ def set_xperiod_point(Kbulk_D,Ksurf_D,initials_set,directory,state_name='matspx'
                                                        Kbulk_D, Ksurf_D, ref),
                                                    save_file=state_name + '_{:.5f}_{:.5f}_{:.5f}.npz'.format(
                                                        Kbulk_D, Ksurf_D, period),
-                                                   Kbulk=np.power(np.tan(np.pi / 10), 2) * Kbulk_D,
-                                                   Ksurf=np.power(np.tan(np.pi / 10), 2) * Ksurf_D,
+                                                   Kbulk=np.power(D, 2) * Kbulk_D,
+                                                   Ksurf=np.power(D, 2) * Ksurf_D,
                                                    reshape=int(period * period_N),
-                                                   z_max_proj=z_max_proj, precision = precision, boundary=boundary)])
+                                                   z_max_proj=z_max_proj, precision = precision,D=D, boundary=boundary)])
         energy, pb, n, period, ref, nnan_energy, wrong_energy = next_point(energy=energy,
                                                                            max_steps_from_minimum=max_steps_from_minimum,
                                                                            period_N=period_N, z_max_proj=z_max_proj,
@@ -339,7 +339,7 @@ def set_xperiod_point(Kbulk_D,Ksurf_D,initials_set,directory,state_name='matspx'
     return energy
 
 def make_map_from_file_x_minimisation(save_dir,KDbulk_list,KDsurf_list, ref,period_N=1,max_steps_from_minimum = 5,
-                                      z_max_proj = np.infty,max_period = np.infty,reverse = True, precision = 1e-7, state_name = 'matspx', boundary=['P','P','F']):
+                                      z_max_proj = np.infty,max_period = np.infty,reverse = True, precision = 1e-7, state_name = 'matspx', D=np.tan(np.pi/10), boundary=['P','P','F']):
     initial = Path(ref)
     directory = Path(save_dir)
 
@@ -377,7 +377,7 @@ def make_map_from_file_x_minimisation(save_dir,KDbulk_list,KDsurf_list, ref,peri
             set_xperiod_point(Kbulk_D=Kbulk_D, Ksurf_D=Ksurf_D, initials_set=[[period, ini]], directory=directory,
                               state_name=state_name,
                               period_N=period_N, max_steps_from_minimum=max_steps_from_minimum, z_max_proj=z_max_proj,
-                              max_period=max_period, precision=precision, boundary=boundary)
+                              max_period=max_period, precision=precision,D=D, boundary=boundary)
         else:
             Kbulk_D = Kv[0]
             Ksurf_D = Kv[1]
@@ -398,13 +398,12 @@ def make_map_from_file_x_minimisation(save_dir,KDbulk_list,KDsurf_list, ref,peri
             set_xperiod_point(Kbulk_D=Kbulk_D, Ksurf_D=Ksurf_D, initials_set=initial_set, directory=directory,
                               state_name=state_name,
                               period_N=period_N, max_steps_from_minimum=max_steps_from_minimum, z_max_proj=z_max_proj,
-                              max_period=max_period, precision = precision, boundary=boundary)
+                              max_period=max_period, precision = precision,D=D, boundary=boundary)
 
 
-def make_map_by_multiplication_x_minimisation(save_dir, ref_dir,initial_period_N=1,period_N=1,max_steps_from_minimum = 5, z_max_proj = np.infty,max_period = np.infty,reverse = True, precision = 1e-7,state_name = 'matspx'):
+def make_map_by_multiplication_x_minimisation(save_dir, ref_dir,initial_period_N=1,period_N=1,max_steps_from_minimum = 5, z_max_proj = np.infty,max_period = np.infty,reverse = True, precision = 1e-7,state_name = 'matspx',J = 1.0,D = np.tan(np.pi / 10)):
     directory = Path(save_dir)
 
-    J = 1.0; D = np.tan(np.pi / 10)
     if not os.path.exists(directory):
         os.makedirs(directory)
 
@@ -437,10 +436,9 @@ def make_map_by_multiplication_x_minimisation(save_dir, ref_dir,initial_period_N
                               period_N=period_N, max_steps_from_minimum=max_steps_from_minimum, z_max_proj=z_max_proj,
                               max_period=max_period, precision = precision)
 
-def make_map_from_file(save_dir, KDbulk_list, KDsurf_list, ref, reverse = True, precision = 1e-7, state_name = 'matspx', boundary=['P','P','F']):
+def make_map_from_file(save_dir, KDbulk_list, KDsurf_list, ref, reverse = True, precision = 1e-7, maxiter = None, state_name = 'matspx',J = 1.0,D=np.tan(np.pi/10), boundary=['P','P','F']):
     initial = Path(ref)
     directory = Path(save_dir)
-    J = 1.0;  D = np.tan(np.pi / 10)
 
     if not os.path.exists(directory):
         os.makedirs(directory)
@@ -457,4 +455,4 @@ def make_map_from_file(save_dir, KDbulk_list, KDsurf_list, ref, reverse = True, 
 
     for idx, Kv in enumerate(Klist, start=1):
         minimize_from_file(directory=directory,load_file=initial,save_file=state_name + '_{:.5f}_{:.5f}.npz'.format(Kv[0], Kv[1]),
-                           J=J, D=D, Kbulk=np.power(D, 2) * Kv[0], Ksurf=np.power(D, 2) * Kv[1], precision=1e-5, boundary=boundary)
+                           J=J, D=D, Kbulk=np.power(D, 2) * Kv[0], Ksurf=np.power(D, 2) * Kv[1], precision=precision,maxiter = maxiter, boundary=boundary)

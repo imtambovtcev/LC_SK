@@ -45,6 +45,10 @@ def map_color_3d(directory,point):
     K = data['K']
     energy=data['energy_per_unit']
     angle=data['angle']
+    if "eigenvalue_positive" in data.keys():
+        eigenvalue_positive = data["eigenvalue_positive"]
+    else:
+        eigenvalue_positive = None
     Kf=K[:,:,0,:2]
 
     point_column = np.argmin(np.linalg.norm(Kf[:,:,0] - point[0], axis=1))
@@ -54,9 +58,11 @@ def map_color_3d(directory,point):
     x=K[point_column,point_row,:,2]
     energy=energy[point_column,point_row,:]
     angle=angle[point_column,point_row,:]
+    if eigenvalue_positive is not None:
+        eigenvalue_positive=eigenvalue_positive[point_column,point_row,:]
     minenergy=np.nanmin(energy)
     minperiod=x[np.nanargmin(energy)]
-    print(f'{minperiod = }±{x[1]-x[0]:.1f}\t{minenergy = }')
+    print(f'{minperiod = }±{x[1]-x[0]:.1f}\t{minenergy = } per unit')
 
     fig, ax1 = plt.subplots()
     color = 'tab:red'
@@ -64,6 +70,10 @@ def map_color_3d(directory,point):
     ax1.set_ylabel(r'$\langle E \rangle$', color=color)
     ax1.plot(x,energy,'.', color=color)
     ax1.tick_params(axis='y', labelcolor=color)
+
+    if eigenvalue_positive is not None:
+        is_saddle=eigenvalue_positive==0
+        ax1.plot(x[is_saddle],energy[is_saddle],'x',color='k')
 
     ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
 
