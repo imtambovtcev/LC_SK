@@ -224,6 +224,7 @@ def gaps(points, period_N):
 
 def next_point(energy,max_steps_from_minimum,period_N,z_max_proj,max_period=np.infty):
     # sort energy by period
+    print(f'{energy = }')
     energy=np.array(sorted(np.array(energy).tolist(), key=lambda x: x[0]))
     # get unsutable points
     wl=energy[:,2]>z_max_proj
@@ -293,6 +294,11 @@ def get_reference(K,K_list,reverse=False):
     else:
         ref = [i for i in ref if K[0] >= i[0]]
     ref = [ i for i in ref if i[0] == ref[0][0] and i[1] == ref[0][1] ]
+    #print(f'{ref = }')
+    if len(ref)==0:
+        ref=sorted(ref, key= lambda x: np.abs(x[:2]-K).tolist())
+        ref = [i for i in ref if i[0] == ref[0][0] and i[1] == ref[0][1]]
+    #print(f'{ref = }')
     return ref
 
 def set_xperiod_point(Kbulk_D,Ksurf_D,initials_set,directory,state_name='matspx',period_N=1,max_steps_from_minimum = 5, z_max_proj = np.infty,max_period = np.infty, precision = 1e-7,D=np.tan(np.pi/10), boundary=['P','P','F']):
@@ -305,9 +311,9 @@ def set_xperiod_point(Kbulk_D,Ksurf_D,initials_set,directory,state_name='matspx'
                                                    Kbulk=np.power(D, 2) * Kbulk_D,
                                                    Ksurf=np.power(D, 2) * Ksurf_D,
                                                    z_max_proj=z_max_proj, precision = precision, boundary=boundary,D=D)])
-    energy=np.array(energy)
-    energy, pb, n, period, ref, nnan_energy, wrong_energy = next_point(energy, max_steps_from_minimum, period_N,
-                                                                       z_max_proj)
+    energy= np.array(energy) if len(energy) !=0 else np.array([[0,np.infty,np.infty]])
+
+    energy, pb, n, period, ref, nnan_energy, wrong_energy = next_point(energy, max_steps_from_minimum, period_N,z_max_proj)
     while period:
         # period_plot(energy, Kbulk, Ksurf, pb, wrong_energy)
         energy.append([period, *minimize_from_file(directory=directory,
