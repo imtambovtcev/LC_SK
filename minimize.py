@@ -288,17 +288,19 @@ def next_point(energy,max_steps_from_minimum,period_N,z_max_proj,max_period=np.i
 
 def get_reference(K,K_list,reverse=False):
     ref = list(K_list)
+    #print(K_list)
     ref=sorted(ref, key= lambda x: np.abs(x[:2]-K).tolist())
     if reverse:
         ref = [i for i in ref if K[0] <= i[0]]
     else:
         ref = [i for i in ref if K[0] >= i[0]]
     ref = [ i for i in ref if i[0] == ref[0][0] and i[1] == ref[0][1] ]
-    #print(f'{ref = }')
+    print(f'{ref = }')
     if len(ref)==0:
+        ref = list(K_list)
         ref=sorted(ref, key= lambda x: np.abs(x[:2]-K).tolist())
         ref = [i for i in ref if i[0] == ref[0][0] and i[1] == ref[0][1]]
-    #print(f'{ref = }')
+    print(f'{ref = }')
     return ref
 
 def set_xperiod_point(Kbulk_D,Ksurf_D,initials_set,directory,state_name='matspx',period_N=1,max_steps_from_minimum = 5, z_max_proj = np.infty,max_period = np.infty, precision = 1e-7,D=np.tan(np.pi/10), boundary=['P','P','F']):
