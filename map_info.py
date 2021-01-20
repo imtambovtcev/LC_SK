@@ -273,8 +273,10 @@ def map_info(directory,var={},compute_negative=False):
             try:            x_tilted_period[idx]=xperiod[idx]*np.sin(angle[idx]*np.pi/180)
             except:()
             try:
-                _,r_max=skyrmion_profile.skyrmion_profile(filename, show=False)
+                r_min,r_max,skyrmion_mask_sum=skyrmion_profile.skyrmion_profile(filename, show=False)
                 skyrmion_size[idx]=r_max[int(s.shape[2]/2)]
+                if np.isnan(skyrmion_size[idx]):
+                    skyrmion_size[idx]=0.
                 print(f'{r_max = }')
                 print(f'{skyrmion_size[idx] = }')
             except:()

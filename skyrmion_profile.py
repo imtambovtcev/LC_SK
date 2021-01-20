@@ -43,15 +43,15 @@ def plot_state(system,s,directory,file,show_extras=False):
 def plot_npz(file,show_extras=False):
 	try:
 		file=Path(file)
-		print(file)
+		print(f'{file = }')
 		container = magnes.io.load(str(file))
 		system = container.extract_system()
 		if 'STATE' in container:
 			s = np.array(container["STATE"])
 			plot_state(system=system, s=s, directory=file.parent, file=file.stem,show_extras=show_extras)
 		else:
-			print(container['PATH'].shape)
-			print(container['PATH'].shape[0])
+			print(f'{container["PATH"].shape = }')
+			print(f'{container["PATH"].shape[0] = }')
 			if container['PATH'].shape[0] == 1:
 				s = list(container["PATH"])[0]
 				plot_state(system=system, s=s, directory=file.parent, file=file.stem,show_extras=show_extras)
@@ -88,8 +88,8 @@ def skyrmion_profile(file,criteria=1.9,show=False):
 	if skyrmion_mask.sum()!=0:
 		x_centre = np.nan
 		y_centre = np.nan
-		print(skyrmion_mask[:,:,0].sum())
-		print(skyrmion_mask.sum())
+		print(f'{skyrmion_mask[:,:,0].sum() = }')
+		print(f'{skyrmion_mask.sum() = }')
 		if skyrmion_mask[:,:,0].sum()>5:
 			x_centre = np.mean(x_grid[skyrmion_mask[:,:,0]])
 			y_centre = np.mean(y_grid[skyrmion_mask[:,:,0]])
@@ -170,7 +170,7 @@ def skyrmion_profile(file,criteria=1.9,show=False):
 		if show: plt.show()
 		plt.close('all')
 
-		return r_min,r_max
+		return r_min,r_max, skyrmion_mask.sum()
 	else:
 		return np.nan, np.nan
 
@@ -278,7 +278,7 @@ def skyrmion_profile_max(file,show=False):
 		z = s[:, :, i, 0, 1]
 		#z=np.zeros(z.shape)
 		#z[20,1]=1
-		print(np.unravel_index(z.argmax(), z.shape))
+		print(f'{np.unravel_index(z.argmax(), z.shape) = }')
 		point = np.unravel_index(z.argmax(), z.shape)
 		point_xy=np.array([point[0]-z.shape[0]/2,point[1]-z.shape[1]/2])
 		print(f'{point = }\t{point_xy = }\t{z[point] = }')
@@ -374,7 +374,7 @@ def skyrmion_profile_max(file,show=False):
 	plt.close('all')
 
 if __name__ == "__main__":
-	show=True
+	show=False
 	file=Path(sys.argv[1])
 	if file.suffix=='.npz':
 		print(skyrmion_profile(file, show=show))
@@ -382,5 +382,5 @@ if __name__ == "__main__":
 		data=[]
 		for f in file.iterdir():
 			if f.suffix == '.npz':
-				print(skyrmion_profile(f, show=show))
+				print(skyrmion_profile(f, show=show)[2])
 	#skyrmion_profile_max(sys.argv[1],show=show)
