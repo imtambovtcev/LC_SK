@@ -174,96 +174,6 @@ def skyrmion_profile(file,criteria=1.9,show=False):
 	else:
 		return np.nan, np.nan
 
-# directions
-
-#	for i in range(s.shape[2]):
-#		z = s[:, :, i, 0, 1]
-#		cone=s[0,0,i,0,:]
-#		cone_sq=np.squeeze(np.linalg.norm(s[:,:,i,0,:]-cone,axis=2))
-#		cone_mask=cone_sq>criteria
-#		direction = s[0, 0, i, 0, :2]
-#		direction = direction / np.linalg.norm(direction)
-#		tan = direction[1] / direction[0]
-#		angle = np.arctan2(direction[1], direction[0])/np.pi*180
-#		perp_angle = angle - 90
-#		perp_tan = np.tan(perp_angle/180*np.pi)
-
-#		print(cone_mask.sum())
-#		x_centre=np.mean(x_grid[cone_mask])
-#		y_centre = np.mean(y_grid[cone_mask])
-#		top_angle=np.arctan2(y_centre,x_centre)* 180 / np.pi
-#		top_tan=y_centre/x_centre
-#		angle_vector.append([i, angle, perp_angle, top_angle])
-#		size.append([i,cone_mask.sum()])
-#		interp = scipy.interpolate.interp2d(x_grid, y_grid, cone_sq, kind='linear')
-#		if np.abs(tan) < 1:
-#			line_x = x
-#			line_y = tan * x
-#		else:
-#			line_y = y
-#			line_x = y / tan
-#		if np.abs(perp_tan) < 1:
-#			perp_line_x = x
-#			perp_line_y = perp_tan * x
-#		else:
-#			perp_line_y = y
-#			perp_line_x = y / perp_tan
-#		if np.abs(top_tan) < 1:
-#			top_line_x = x
-#			top_line_y = top_tan * x
-#		else:
-#			top_line_y = y
-#			top_line_x = y / top_tan
-#
-#		top_line_z = np.array([interp(a, b) for a, b in zip(top_line_x, top_line_y)])
-#		#plt.plot(top_line_x, top_line_z)
-#		#plt.show()
-#		top_d_arg = [np.array(range(len(top_line_z)))[(top_line_z>criteria).reshape(-1)].min(),np.array(range(len(top_line_z)))[(top_line_z>criteria).reshape(-1)].max()]
-#		top_d_coord = np.array([[top_line_x[top_d_arg[0]], top_line_y[top_d_arg[0]]],
-#		top_d_r=[np.linalg.norm(top_d_coord[0,:]),np.linalg.norm(top_d_coord[1,:])]
-#		#plt.plot(top_line_x,top_line_z)
-#		#plt.plot(top_d_coord[0,0],criteria,'.')
-#		#plt.plot(top_d_coord[1,0], criteria, '.')
-#		#plt.show()
-#
-#		shape.append(top_d_r)
-#		plt.contourf(x_grid, y_grid, cone_sq)#z
-#		plt.plot(x_centre, y_centre, 'k.')
-#		plt.plot(line_x, line_y, 'b')
-#		plt.plot(perp_line_x, perp_line_y, 'r')
-#		plt.plot(top_line_x, top_line_y, 'g')
-#		plt.plot(top_line_x[top_d_arg[0]], top_line_y[top_d_arg[0]],'rx')
-#		plt.plot(top_line_x[top_d_arg[1]], top_line_y[top_d_arg[1]], 'bx')
-#		plt.colorbar()
-#		plt.title('layer {}'.format(i))
-#		if show: plt.show()
-#		plt.close('all')
-#	shape=np.array(shape)
-#	plt.plot(shape[:,0],'r.')
-#	plt.plot(shape[:, 1],'b.')
-#	plt.savefig(str(file.parent.joinpath(file.stem + '_skplace.pdf')))
-#	if show: plt.show()
-#	plt.close('all')
-#	print(size)
-#	angle_vector = np.array(angle_vector)
-#	size=np.array(size)
-#	plt.plot(size[:,0],size[:,1],'.')
-#	plt.xlabel('z')
-#	plt.ylabel('skyrmion square')
-#	plt.savefig(str(file.parent.joinpath(file.stem+'_sksquare.pdf')))
-#	if show: plt.show()
-#	plt.close('all')
-#
-#	plt.plot(angle_vector[:, 0], angle_vector[:, 1], 'r.', label='spiral angle')
-#	plt.plot(angle_vector[:, 0], angle_vector[:, 2], 'g.', label='spiral angle + 90')
-#	plt.plot(angle_vector[:, 0], angle_vector[:, 3], 'b.', label='skyrmion angle to z max')
-#	plt.xlabel('z')
-#	plt.ylabel('angle')
-#	plt.legend()
-#	plt.savefig(str(file.parent.joinpath(file.stem + '_angle_alt.pdf')))
-#	if show: plt.show()
-#	plt.close('all')
-
 def skyrmion_profile_max(file,show=False):
 	file = Path(file)
 	container = magnes.io.load(str(file))
@@ -372,6 +282,17 @@ def skyrmion_profile_max(file,show=False):
 	plt.savefig(str(file.parent.joinpath(file.stem+'_sksize.pdf')))
 	if show: plt.show()
 	plt.close('all')
+
+def fast_skyrmion_size_compute(s,criteria=1.9):
+	cone = np.squeeze(s[0, 0, :, 0, :])
+	state_diff = np.linalg.norm(np.squeeze(s) - cone, axis=3)
+	skyrmion_mask = state_diff > criteria
+	#print(f'{skyrmion_mask.shape= }')
+	skyrmion_mask=skyrmion_mask.sum(axis=0)
+	#print(f'{skyrmion_mask.shape= }')
+	skyrmion_mask = skyrmion_mask.sum(axis=0)
+	#print(f'{skyrmion_mask.shape= }')
+	return np.sqrt((skyrmion_mask[s.shape[2]//2]+skyrmion_mask[s.shape[2]//2-1]+skyrmion_mask[s.shape[2]//2+1])/3),np.sqrt((skyrmion_mask[0]+skyrmion_mask[-1])/2)
 
 if __name__ == "__main__":
 	show=False

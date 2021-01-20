@@ -13,6 +13,8 @@ import utilities
 import magnes
 import skyrmion_profile
 
+from progress.bar import Bar
+
 font = {'family' : 'sans-serif',
         'size'   : 16}
 
@@ -161,7 +163,8 @@ def localisation(state):
     y1 = np.linalg.norm(y1)
     return (x0+x1+y0+y1)/(2*(state.shape[0]+state.shape[1])*state.shape[2])
 
-def map_info(directory,var={},compute_negative=False):
+def map_info(directory,var={},compute_energies=False,compute_charge= False,compute_turns=False,compute_projections=False,
+             compute_periods= False,compute_negative=False,compute_skyrmion_size=False, compute_localisation=False):
     print(f'{var = },{bool(var) = }')
     directory=Path(directory)
     K, state_name=mfm.content(str(directory))
@@ -174,6 +177,8 @@ def map_info(directory,var={},compute_negative=False):
     energy_K = np.full(K.shape[0], np.nan)
     energy_H = np.full(K.shape[0], np.nan)
     energy_per_unit = np.full(K.shape[0], np.nan)
+    epu_from_cone = np.full(K.shape[0], np.nan)
+    epu_from_ferr = np.full(K.shape[0], np.nan)
     local=np.full(K.shape[0],np.nan)
     centre_charge=np.full(K.shape[0],np.nan)
     border_charge=np.full(K.shape[0],np.nan)
@@ -192,139 +197,161 @@ def map_info(directory,var={},compute_negative=False):
     energy_if_xsp = np.full(K.shape[0], np.nan)
     xperiod = np.full(K.shape[0], np.nan)
     x_tilted_period = np.full(K.shape[0], np.nan)
-    epu_from_cone= np.full(K.shape[0], np.nan)
-    epu_from_ferr=np.full(K.shape[0], np.nan)
+
     smallest_eigenvalue=np.full(K.shape[0], np.nan)
     eigenvalue_positive=np.full(K.shape[0], np.nan)
     skyrmion_size = np.full(K.shape[0], np.nan)
+    bober_size = np.full(K.shape[0], np.nan)
+    is_skyrmion = np.full(K.shape[0], False)
+    is_toron = np.full(K.shape[0], False)
+    is_bober = np.full(K.shape[0], False)
     t0=time.time()
-
-    for idx,Kv in enumerate(K):
-        filename=state_name
-        for f in Kv:
-            filename+='_{:.5f}'.format(f)
-        filename=Path(filename+'.npz')
-        try:
-            container = magnes.io.load(str(os.path.join(directory, filename)))
-            system=container.extract_system()
-            if "PATH" in container:
-                s = list(container["PATH"])[0]
-                print('state from path')
-            else:
-                s = container["STATE"]
-                print('state from state')
-            state = system.field3D()
-            state.upload(s)
+    bar_max=len(K)
+    with Bar('Processing', max=bar_max, suffix='%(index)d / %(max)d [%(elapsed_td)s / %(eta_td)s]') as bar:
+        for idx,Kv in enumerate(K):
+            filename=state_name
+            for f in Kv:
+                filename+='_{:.5f}'.format(f)
+            filename=Path(filename+'.npz')
             try:
-                energy[idx] = state.energy_contributions_sum()['total']\
-                              -s.shape[0]*s.shape[1]*(s.shape[2]-2)*3-s.shape[0]*s.shape[1]*5
-                energy_per_unit[idx]=energy[idx]/(s.shape[0]*s.shape[1]*s.shape[2])
-            except:()
-            try:
-                energy_original[idx] = state.energy_contributions_sum()['total']
-            except:()
-            try:
-                energy_J[idx] = state.energy_contributions_sum()['Heisenberg']
-            except:()
-            try:
-                energy_D[idx] = state.energy_contributions_sum()['DM']
-            except:()
-            try:
-                energy_K[idx] = state.energy_contributions_sum()['anisotropy']
-            except:()
-            try:
-                energy_H[idx] = state.energy_contributions_sum()['Zeeman']
-            except:()
-            try: centre_charge[idx]=toplogical_charge(system, s, int(s.shape[2] / 2))
-            except:()
-            try: border_charge[idx] = toplogical_charge(system, s, 0)
-            except:()
-            try:            border_turn[idx] = (s[:, :, 0, :, 2] > 0.1).sum() + (s[:, :, -1, :, 2] > 0.1).sum()
-            except:()
-            try:            mean_z_projection[idx]=np.sum(np.dot(s,np.array([0.,0.,1.])))/(s.size/3)
-            except:()
-            try:            mean_z_centre_projection[idx] = np.sum(np.dot(s[:,:,int(s.shape[2]/2)],
-                                                                          np.array([0., 0., 1.]))) / (s.shape[0]*s.shape[1])
-            except:()
-            try:            mean_z_centre_abs_projection[idx] = np.sum(np.abs(np.dot(s[:,:,int(s.shape[2]/2)],
-                                                                          np.array([0., 0., 1.])))) / (s.shape[0]*s.shape[1])
-            except:()
-            try:            mean_x_projection[idx]=np.sum(np.dot(s,np.array([1.,0.,0.])))/(s.size/3)
-            except:()
-            try:            mean_x_abs_projection[idx] = np.sum(np.abs(np.dot(s,np.array([1.,0.,0.]))))/(s.size/3)
-            except:()
-            try:            mean_x_centre_abs_projection[idx] = np.sum(np.abs(np.dot(s[:,:,int(s.shape[2]/2)],
-                                                                          np.array([1., 0., 0.])))) / (s.shape[0]*s.shape[1])
-            except:()
-            try:            mean_x_centre_abs_projection_angle[idx] = np.arccos(mean_x_centre_abs_projection[idx])*360/(2*np.pi)
-            except:()
-            try:            angle[idx] = utilities.get_angle(s)
-            except:()
-            try:            zperiod[idx] = utilities.get_zperiod(s)
-            except:()
-            try:            zturns[idx] = np.min([s.shape[2]/zperiod[idx],5])
-            except:()
-            try:            mean_z_abs_projection[idx] = np.sum(np.abs(np.dot(s, np.array([0., 0., 1.])))) / (s.size/3)
-            except:()
-            try:            local[idx]=localisation(s)
-            except:()
-            try:            xperiod[idx] =s.shape[0]
-            except:()
-            try:            x_tilted_period[idx]=xperiod[idx]*np.sin(angle[idx]*np.pi/180)
-            except:()
-            try:
-                r_min,r_max,skyrmion_mask_sum=skyrmion_profile.skyrmion_profile(filename, show=False)
-                skyrmion_size[idx]=r_max[int(s.shape[2]/2)]
-                if np.isnan(skyrmion_size[idx]):
-                    skyrmion_size[idx]=0.
-                print(f'{r_max = }')
-                print(f'{skyrmion_size[idx] = }')
-            except:()
-            #try:            epu_from_cone[idx]=energy_per_unit[idx]-epu_cone[idx]
-            #except:()
-            #try:            epu_from_ferr[idx]=energy_per_unit[idx]-epu_ferr[idx]
-            #except:()
-            try:
+                container = magnes.io.load(str(os.path.join(directory, filename)))
+                system=container.extract_system()
+                if "PATH" in container:
+                    s = list(container["PATH"])[0]
+                    #print('state from path')
+                else:
+                    s = container["STATE"]
+                    #print('state from state')
+                state = system.field3D()
+                state.upload(s)
+                if compute_energies:
+                    try:
+                        energy[idx] = state.energy_contributions_sum()['total']\
+                                      -s.shape[0]*s.shape[1]*(s.shape[2]-2)*3-s.shape[0]*s.shape[1]*5
+                        energy_per_unit[idx]=energy[idx]/(s.shape[0]*s.shape[1]*s.shape[2])
+                    except:()
+                    try:
+                        energy_original[idx] = state.energy_contributions_sum()['total']
+                    except:()
+                    try:
+                        energy_J[idx] = state.energy_contributions_sum()['Heisenberg']
+                    except:()
+                    try:
+                        energy_D[idx] = state.energy_contributions_sum()['DM']
+                    except:()
+                    try:
+                        energy_K[idx] = state.energy_contributions_sum()['anisotropy']
+                    except:()
+                    try:
+                        energy_H[idx] = state.energy_contributions_sum()['Zeeman']
+                    except:()
+                    try:
+                        if True:  # mean_z_abs_projection[idx]>0.5:
+                            energy_if_xsp[idx] = energy_per_unit[idx]
+                    except:
+                        ()
+                if compute_charge:
+                    try: centre_charge[idx]=toplogical_charge(system, s, int(s.shape[2] / 2))
+                    except:()
+                    try: border_charge[idx] = toplogical_charge(system, s, 0)
+                    except:()
+                if compute_turns:
+                    try:            border_turn[idx] = (s[:, :, 0, :, 2] > 0.1).sum() + (s[:, :, -1, :, 2] > 0.1).sum()
+                    except:()
+                if compute_projections:
+                    try:            mean_z_projection[idx]=np.sum(np.dot(s,np.array([0.,0.,1.])))/(s.size/3)
+                    except:()
+                    try:            mean_z_centre_projection[idx] = np.sum(np.dot(s[:,:,int(s.shape[2]/2)],
+                                                                                  np.array([0., 0., 1.]))) / (s.shape[0]*s.shape[1])
+                    except:()
+                    try:            mean_z_centre_abs_projection[idx] = np.sum(np.abs(np.dot(s[:,:,int(s.shape[2]/2)],
+                                                                                  np.array([0., 0., 1.])))) / (s.shape[0]*s.shape[1])
+                    except:()
+                    try:            mean_x_projection[idx]=np.sum(np.dot(s,np.array([1.,0.,0.])))/(s.size/3)
+                    except:()
+                    try:            mean_x_abs_projection[idx] = np.sum(np.abs(np.dot(s,np.array([1.,0.,0.]))))/(s.size/3)
+                    except:()
+                    try:            mean_x_centre_abs_projection[idx] = np.sum(np.abs(np.dot(s[:,:,int(s.shape[2]/2)],
+                                                                                  np.array([1., 0., 0.])))) / (s.shape[0]*s.shape[1])
+                    except:()
+                    try:            mean_x_centre_abs_projection_angle[idx] = np.arccos(mean_x_centre_abs_projection[idx])*360/(2*np.pi)
+                    except:()
+                    try:
+                        mean_z_abs_projection[idx] = np.sum(np.abs(np.dot(s, np.array([0., 0., 1.])))) / (s.size / 3)
+                    except:
+                        ()
+                if compute_periods:
+                    try:            angle[idx] = utilities.get_angle(s)
+                    except:()
+                    try:            zperiod[idx] = utilities.get_zperiod(s)
+                    except:()
+                    try:            zturns[idx] = np.min([s.shape[2]/zperiod[idx],5])
+                    except:()
+                    try:
+                        xperiod[idx] = s.shape[0]
+                    except:
+                        ()
+                    try:
+                        x_tilted_period[idx] = xperiod[idx] * np.sin(angle[idx] * np.pi / 180)
+                    except:
+                        ()
+                if compute_skyrmion_size:
+                    try:
+                        if compute_skyrmion_size == 'fast':
+                            #print('fast skyrmion size')
+                            skyrmion_size[idx],bober_size[idx] = skyrmion_profile.fast_skyrmion_size_compute(s)
+                            if skyrmion_size[idx]>0.1 and bober_size[idx]>1.:
+                                is_skyrmion[idx]=True
+                                print(f'{is_skyrmion[idx] = }')
+                            elif skyrmion_size[idx]>0.1 and bober_size[idx]<=1.:
+                                is_toron[idx] = True
+                                print(f'{is_toron[idx] = }')
+                            elif skyrmion_size[idx]<=0.1 and bober_size[idx]>1.:
+                                is_bober[idx] = True
+                                print(f'{is_bober[idx] = }')
+                            #print(f'{skyrmion_size[idx] = }\t{bober_size[idx] = }')
+                        elif compute_skyrmion_size == 'full':
+                            #print('full skyrmion size')
+                            r_min,r_max,skyrmion_mask_sum=skyrmion_profile.skyrmion_profile(filename, show=False)
+                            skyrmion_size[idx]=r_max[int(s.shape[2]/2)]
+                            if np.isnan(skyrmion_size[idx]):
+                                skyrmion_size[idx]=0.
+                            #print(f'{r_max = }')
+                            #print(f'{skyrmion_size[idx] = }')
+                    except:()
                 if compute_negative:
-                    print('computing negative')
-                    rate, negative, normal2d, oper, first, second = \
-                        magnes.rate.dynamic_prefactor_htst(system, state, normal=None,tolerance=1e-5, number_of_modes=1)
-                    negative=np.array(negative)[0]
-                    smallest_eigenvalue[idx]=negative
-                    eigenvalue_positive[idx]=1 if negative>=0 else 0
-                    print(f'{negative = }')
-                else:
-                    print('negative skipped')
+                    try:
+                        print('computing negative')
+                        rate, negative, normal2d, oper, first, second = \
+                            magnes.rate.dynamic_prefactor_htst(system, state, normal=None,tolerance=1e-5, number_of_modes=1)
+                        negative=np.array(negative)[0]
+                        smallest_eigenvalue[idx]=negative
+                        eigenvalue_positive[idx]=1 if negative>=0 else 0
+                        print(f'{negative = }')
+                    except:                ()
+
+                if compute_localisation:
+                    try:  local[idx]=localisation(s)
+                    except:()
+                    try:
+                        if local[idx]<1:
+                            if abs(centre_charge[idx])<0.3 and abs(border_charge[idx])<0.3 and border_turn[idx]<20:
+                                state_type[idx]='cone'
+                            elif abs(centre_charge[idx]) < 0.3 and (abs(abs(border_charge[idx])-1) < 0.3 or border_turn[idx] > 20):
+                                state_type[idx] = 'bober'
+                            elif abs(abs(centre_charge[idx])-1)<0.3 and abs(border_charge[idx])<0.3 and border_turn[idx]<20:
+                                state_type[idx]='toron'
+                            elif abs(abs(centre_charge[idx]) - 1) < 0.3 and (abs(abs(border_charge[idx])-1) < 0.3 or border_turn[idx] > 20):
+                                state_type[idx] = 'skyrmion'
+                        else:
+                            print(f'{local[idx] = }')
+                            state_type[idx] = np.nan
+                    except: ()
             except:
-                print('negative fail')
-            try:
-                if local[idx]<1:
-                    if abs(centre_charge[idx])<0.3 and abs(border_charge[idx])<0.3 and border_turn[idx]<20:
-                        state_type[idx]='cone'
-                    elif abs(centre_charge[idx]) < 0.3 and (abs(abs(border_charge[idx])-1) < 0.3 or border_turn[idx] > 20):
-                        state_type[idx] = 'bober'
-                    elif abs(abs(centre_charge[idx])-1)<0.3 and abs(border_charge[idx])<0.3 and border_turn[idx]<20:
-                        state_type[idx]='toron'
-                    elif abs(abs(centre_charge[idx]) - 1) < 0.3 and (abs(abs(border_charge[idx])-1) < 0.3 or border_turn[idx] > 20):
-                        state_type[idx] = 'skyrmion'
-                else:
-                    print(f'{local[idx] = }')
-                    state_type[idx] = np.nan
-            except: ()
-            try:
-                if  True:#mean_z_abs_projection[idx]>0.5:
-                    energy_if_xsp[idx] = energy_per_unit[idx]
-            except:()
-
-        except:
-            energy[idx] = np.nan
-            state_type[idx] = np.nan
-            print(colored('no/damaged file','red'))
-
-        if idx%100==99:
-            print('{} completed out of {}'.format(idx+1, K.shape[0]))
-            print('Running time {:.0f}s Estimated time {:.0f}s'.format(time.time() - t0,
-                                                                       (time.time() - t0) * (K.shape[0] - (idx+1)) / (idx+1)))
+                energy[idx] = np.nan
+                state_type[idx] = np.nan
+                print(colored('no/damaged file','red'))
+            bar.next()
 
     if not os.path.exists(str(directory.joinpath('info/'))):
         os.makedirs(str(directory.joinpath('info/')))
@@ -342,11 +369,12 @@ def map_info(directory,var={},compute_negative=False):
              energy_if_xsp=energy_if_xsp,xperiod=xperiod,x_tilted_period =x_tilted_period,
              epu_from_cone=epu_from_cone,epu_from_ferr=epu_from_ferr,
              smallest_eigenvalue=smallest_eigenvalue,eigenvalue_positive=eigenvalue_positive,
-             skyrmion_size=skyrmion_size,
+             skyrmion_size=skyrmion_size,bober_size=bober_size, is_skyrmion = is_skyrmion, is_toron=is_toron,is_bober=is_bober,
              allow_pickle=True)
     structurize(str(directory),var)
 
 if __name__ == "__main__":
     directory = Path('./') if len(sys.argv) <= 1 else Path(sys.argv[1])
     compute_negative= False if len(sys.argv) <= 2 else sys.argv[2]=='True'
-    map_info(directory,compute_negative=compute_negative)
+    compute_skyrmion_size = False if len(sys.argv) <= 3 else sys.argv[3]
+    map_info(directory,compute_negative=compute_negative,compute_skyrmion_size=compute_skyrmion_size)

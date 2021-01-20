@@ -367,9 +367,12 @@ def map_color(directory,show=False, point=None, plot_z_projection=True):
                 if not (np.all(sk) or np.all(np.invert(sk))):
                     state = np.zeros(c.shape)
                     state[sk] = 1.
-                    plt.contourf(x, y, state, levels=[0,1], cmap='winter', hatches=[None, '-'],extend='both', alpha=0.0)
-                    plt.contour(x,y, state, levels=state_levels, cmap='autumn', hatches=['-', '/', '\\', '//'], extend='both',
-                                alpha=0.8)
+                    try:
+                        plt.contourf(x, y, state, levels=[0,1], cmap='winter', hatches=[None, '-'],extend='both', alpha=0.0)
+                    except:()
+                    try:
+                        plt.contour(x,y, state, levels=state_levels, cmap='autumn', hatches=['-', '/', '\\', '//'], extend='both',alpha=0.8)
+                    except:()
                 if not (np.all(t) or np.all(np.invert(t))):
                     state = np.zeros(c.shape)
                     state[t] = 1.
@@ -379,9 +382,14 @@ def map_color(directory,show=False, point=None, plot_z_projection=True):
                 if not (np.all(b) or np.all(np.invert(b))):
                     state = np.zeros(c.shape)
                     state[b] = 1.
-                    plt.contourf(x, y, state, levels=[0,1], cmap='winter', hatches=[None, '/'],extend='both', alpha=0.0)
-                    plt.contour(x, y, state, levels=state_levels, cmap='winter', hatches=['-', '/', '\\', '//'], extend='lower',
+                    try:
+                        plt.contourf(x, y, state, levels=[0,1], cmap='winter', hatches=[None, '/'],extend='both', alpha=0.0)
+                    except:
+                        ()
+                    try:
+                        plt.contour(x, y, state, levels=state_levels, cmap='winter', hatches=['-', '/', '\\', '//'], extend='lower',
                                 alpha=0.8)
+                    except:()
                 plt.tight_layout()
                 plt.savefig(str(directory.joinpath('info/state.pdf')))
                 if show: plt.show()
