@@ -148,7 +148,7 @@ def minimize_from_file(directory,load_file,save_file,J=1.,D=np.tan(np.pi/10),Kbu
         ini=change_x_shape(ini, reshape)
     bc = [magnes.BC.PERIODIC if i == 'P' else magnes.BC.FREE for i in boundary]
     system,s,energy=minimize(ini,J=J,D=D,Kbulk=Kbulk,Ksurf=Ksurf, precision = precision,maxiter = maxiter, bc=bc)
-    print(f'{np.mean(np.abs(s[:,:,:,0,0])) = }')
+    #print(f'{np.mean(np.abs(s[:,:,:,0,0])) = }')
     container = magnes.io.container(str(directory.joinpath(save_file)))
     container.store_system(system)
     container["PATH"] = np.array([s])
@@ -444,7 +444,7 @@ def make_map_by_multiplication_x_minimisation(save_dir, ref_dir,initial_period_N
                               period_N=period_N, max_steps_from_minimum=max_steps_from_minimum, z_max_proj=z_max_proj,
                               max_period=max_period, precision = precision)
 
-def make_map_from_file(save_dir, KDbulk_list, KDsurf_list, ref, reverse = True, precision = 1e-7, maxiter = None, state_name = 'matspx',J = 1.0,D=np.tan(np.pi/10), boundary=['P','P','F']):
+def make_map_from_file(save_dir, KDbulk_list, KDsurf_list, ref, reverse = True, precision = 1e-7, maxiter = None, state_name = 'magnpzfile',J = 1.0,D=np.tan(np.pi/10), boundary=['P','P','F']):
     initial = Path(ref)
     directory = Path(save_dir)
 
@@ -464,3 +464,12 @@ def make_map_from_file(save_dir, KDbulk_list, KDsurf_list, ref, reverse = True, 
     for idx, Kv in enumerate(Klist, start=1):
         minimize_from_file(directory=directory,load_file=initial,save_file=state_name + '_{:.5f}_{:.5f}.npz'.format(Kv[0], Kv[1]),
                            J=J, D=D, Kbulk=np.power(D, 2) * Kv[0], Ksurf=np.power(D, 2) * Kv[1], precision=precision,maxiter = maxiter, boundary=boundary)
+
+def make_map_from_map(directory,save_directory,ref_file,state_name='magnpzfile',J = 1.0,D=np.tan(np.pi/10), boundary=['P','P','F'], precision = 1e-7, maxiter = None):
+    K,state_name_=mfm.content(directory=directory)
+    if not os.path.exists(save_directory):
+        os.makedirs(save_directory)
+    for Kv in K:
+        print(f'{Kv = }')
+        minimize_from_file(directory=save_directory,load_file=ref_file,save_file=state_name + '_{:.5f}_{:.5f}.npz'.format(Kv[0], Kv[1]),
+                           J=J, D=D, Kbulk=np.power(D, 2) * Kv[0], Ksurf=np.power(D, 2) * Kv[1],  precision=precision,maxiter = maxiter, boundary=boundary)

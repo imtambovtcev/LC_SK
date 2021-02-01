@@ -10,10 +10,10 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import matplotlib
 
-font = {'family' : 'sans-serif',
-        'size'   : 12}
+#font = {'family' : 'sans-serif',
+#        'size'   : 12}
 
-matplotlib.rc('font', **font)
+#matplotlib.rc('font', **font)
 cmap='viridis'
 
 def period_plot(energy,Kbulk, Ksurf,pb=None,wrong_energy=[]):

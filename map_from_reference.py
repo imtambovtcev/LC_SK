@@ -16,19 +16,13 @@ from pathlib import Path
 from termcolor import colored
 from minimize import *
 
-initial = Path('/media/ivan/64E21891E2186A16/LC_SK/new_spx/-0.1_5/t/1/')
-directory = Path('/media/ivan/64E21891E2186A16/LC_SK/new_spx/-0.1_5/t/10')
+ref_file=Path('/home/ivan/LC_SK/initials/cone/cone1/20.npz')
+initial = Path('/home/ivan/LC_SK/skt/skyrmion')
+directory = Path('/home/ivan/LC_SK/skt/cone')
 
 print(f'{initial = }')
 print(f'{directory = }')
 
-make_map_from_map(save_dir=directory,
-                   ref_dir=initial,
-                   initial_period_N=1,
-                   period_N=10,
-                   max_steps_from_minimum=4,
-                   z_max_proj=np.infty,
-                   reverse=False,
-                   max_period=500)
+make_map_from_map(directory=initial,save_directory=directory,ref_file=ref_file,state_name='cone',maxiter=10000)
 
 map_info.map_info(directory)

@@ -163,8 +163,184 @@ def localisation(state):
     y1 = np.linalg.norm(y1)
     return (x0+x1+y0+y1)/(2*(state.shape[0]+state.shape[1])*state.shape[2])
 
-def map_info(directory,var={},compute_energies=False,compute_charge= False,compute_turns=False,compute_projections=False,
-             compute_periods= False,compute_negative=False,compute_skyrmion_size=False, compute_localisation=False):
+def state_info(filename,compute_energies=True,compute_charge= False,compute_turns=False,compute_projections=False,
+             compute_periods=True,compute_negative=False,compute_skyrmion_size=False, compute_localisation=False):
+    data={}
+    container = magnes.io.load(str(filename))
+    system = container.extract_system()
+    if "PATH" in container:
+        s = list(container["PATH"])[0]
+        # print('state from path')
+    else:
+        s = container["STATE"]
+        # print('state from state')
+    state = system.field3D()
+    state.upload(s)
+    if compute_energies:
+        try:
+            data['energy'] = state.energy_contributions_sum()['total'] \
+                          - s.shape[0] * s.shape[1] * (s.shape[2] - 2) * 3 - s.shape[0] * s.shape[1] * 5
+            data['energy_per_unit'] = data['energy'] / (s.shape[0] * s.shape[1] * s.shape[2])
+        except:
+            ()
+        try:
+            data['energy_original'] = state.energy_contributions_sum()['total']
+        except:
+            ()
+        try:
+            data['energy_J'] = state.energy_contributions_sum()['Heisenberg']
+        except:
+            ()
+        try:
+            data['energy_D'] = state.energy_contributions_sum()['DM']
+        except:
+            ()
+        try:
+            data['energy_K'] = state.energy_contributions_sum()['anisotropy']
+        except:
+            ()
+        try:
+            data['energy_H'] = state.energy_contributions_sum()['Zeeman']
+        except:
+            ()
+        try:
+            if True:
+                data['energy_if_xsp'] = data['energy_per_unit']
+        except:
+            ()
+    if compute_charge:
+        try:
+            data['centre_charge'] = toplogical_charge(system, s, int(s.shape[2] / 2))
+        except:
+            ()
+        try:
+            data['border_charge'] = toplogical_charge(system, s, 0)
+        except:
+            ()
+    if compute_turns:
+        try:
+            data['border_turn'] = (s[:, :, 0, :, 2] > 0.1).sum() + (s[:, :, -1, :, 2] > 0.1).sum()
+        except:
+            ()
+    if compute_projections:
+        try:
+            data['mean_z_projection'] = np.sum(np.dot(s, np.array([0., 0., 1.]))) / (s.size / 3)
+        except:
+            ()
+        try:
+            data['mean_z_centre_projection'] = np.sum(np.dot(s[:, :, int(s.shape[2] / 2)],
+                                                          np.array([0., 0., 1.]))) / (s.shape[0] * s.shape[1])
+        except:
+            ()
+        try:
+            data['mean_z_centre_abs_projection'] = np.sum(np.abs(np.dot(s[:, :, int(s.shape[2] / 2)],
+                                                                     np.array([0., 0., 1.])))) / (
+                                                            s.shape[0] * s.shape[1])
+        except:
+            ()
+        try:
+            data['mean_x_projection'] = np.sum(np.dot(s, np.array([1., 0., 0.]))) / (s.size / 3)
+        except:
+            ()
+        try:
+            data['mean_x_abs_projection'] = np.sum(np.abs(np.dot(s, np.array([1., 0., 0.])))) / (s.size / 3)
+        except:
+            ()
+        try:
+            data['mean_x_centre_abs_projection'] = np.sum(np.abs(np.dot(s[:, :, int(s.shape[2] / 2)],
+                                                                     np.array([1., 0., 0.])))) / (
+                                                            s.shape[0] * s.shape[1])
+        except:
+            ()
+        try:
+            data['mean_x_centre_abs_projection_angle'] = np.arccos(data['mean_x_centre_abs_projection']) * 360 / (2 * np.pi)
+        except:
+            ()
+        try:
+            data['mean_z_abs_projection'] = np.sum(np.abs(np.dot(s, np.array([0., 0., 1.])))) / (s.size / 3)
+        except:
+            ()
+    if compute_periods:
+        try:
+            data['angle'] = utilities.get_angle(s)
+        except:
+            ()
+        try:
+            data['zperiod'] = utilities.get_zperiod(s)
+        except:
+            ()
+        try:
+            data['zturns'] = np.min([s.shape[2] / data['zperiod'], 5])
+        except:
+            ()
+        try:
+            data['xperiod'] = s.shape[0]
+        except:
+            ()
+        try:
+            data['x_tilted_period'] = data['xperiod'] * np.sin(data['angle'] * np.pi / 180)
+        except:
+            ()
+    if compute_skyrmion_size:
+        try:
+            if compute_skyrmion_size == 'fast':
+                # print('fast skyrmion size')
+                data['skyrmion_size'], data['bober_size'] = skyrmion_profile.fast_skyrmion_size_compute(s)
+                if data['skyrmion_size'] > 0.1 and data['bober_size'] > 1.:
+                    data['is_skyrmion'] = True
+                elif data['skyrmion_size'] > 0.1 and data['bober_size'] <= 1.:
+                    data['is_toron'] = True
+                elif data['skyrmion_size'] <= 0.1 and data['bober_size'] > 1.:
+                    data['is_bober'] = True
+                # print(f'{skyrmion_size'] = }\t{bober_size'] = }')
+            elif compute_skyrmion_size == 'full':
+                # print('full skyrmion size')
+                r_min, r_max, skyrmion_mask_sum = skyrmion_profile.skyrmion_profile(filename, show=False)
+                data['skyrmion_size'] = r_max[int(s.shape[2] / 2)]
+                if np.isnan(data['skyrmion_size']):
+                    data['skyrmion_size'] = 0.
+                # print(f'{r_max = }')
+                # print(f'{data['skyrmion_size'] = }')
+        except:
+            ()
+    if compute_negative:
+        try:
+            print('computing negative')
+            rate, negative, normal2d, oper, first, second = \
+                magnes.rate.dynamic_prefactor_htst(system, state, normal=None, tolerance=1e-5, number_of_modes=1)
+            negative = np.array(negative)[0]
+            data['smallest_eigenvalue'] = negative
+            data['eigenvalue_positive'] = 1 if negative >= 0 else 0
+            print(f'{negative = }')
+        except:
+            ()
+
+    if compute_localisation:
+        try:
+            data['local'] = localisation(s)
+        except:
+            ()
+        try:
+            if data['local'] < 1:
+                if abs(data['centre_charge']) < 0.3 and abs(data['border_charge']) < 0.3 and data['border_turn'] < 20:
+                    data['state_type'] = 'cone'
+                elif abs(data['centre_charge']) < 0.3 and (
+                        abs(abs(data['border_charge']) - 1) < 0.3 or data['border_turn'] > 20):
+                    data['state_type'] = 'bober'
+                elif abs(abs(data['centre_charge']) - 1) < 0.3 and abs(data['border_charge']) < 0.3 and data['border_turn'] < 20:
+                    data['state_type'] = 'toron'
+                elif abs(abs(data['centre_charge']) - 1) < 0.3 and (
+                        abs(abs(data['border_charge']) - 1) < 0.3 or data['border_turn'] > 20):
+                    data['state_type'] = 'skyrmion'
+            else:
+                print(f'{data["local"] = }')
+                data['state_type'] = np.nan
+        except:
+            ()
+    return data
+
+def map_info(directory,var={},compute_energies=True,compute_charge= True,compute_turns=True,compute_projections=True,
+             compute_periods=True,compute_negative=True,compute_skyrmion_size=True, compute_localisation=True):
     print(f'{var = },{bool(var) = }')
     directory=Path(directory)
     K, state_name=mfm.content(str(directory))
@@ -214,139 +390,148 @@ def map_info(directory,var={},compute_energies=False,compute_charge= False,compu
                 filename+='_{:.5f}'.format(f)
             filename=Path(filename+'.npz')
             try:
-                container = magnes.io.load(str(os.path.join(directory, filename)))
-                system=container.extract_system()
-                if "PATH" in container:
-                    s = list(container["PATH"])[0]
-                    #print('state from path')
-                else:
-                    s = container["STATE"]
-                    #print('state from state')
-                state = system.field3D()
-                state.upload(s)
-                if compute_energies:
-                    try:
-                        energy[idx] = state.energy_contributions_sum()['total']\
-                                      -s.shape[0]*s.shape[1]*(s.shape[2]-2)*3-s.shape[0]*s.shape[1]*5
-                        energy_per_unit[idx]=energy[idx]/(s.shape[0]*s.shape[1]*s.shape[2])
-                    except:()
-                    try:
-                        energy_original[idx] = state.energy_contributions_sum()['total']
-                    except:()
-                    try:
-                        energy_J[idx] = state.energy_contributions_sum()['Heisenberg']
-                    except:()
-                    try:
-                        energy_D[idx] = state.energy_contributions_sum()['DM']
-                    except:()
-                    try:
-                        energy_K[idx] = state.energy_contributions_sum()['anisotropy']
-                    except:()
-                    try:
-                        energy_H[idx] = state.energy_contributions_sum()['Zeeman']
-                    except:()
-                    try:
-                        if True:  # mean_z_abs_projection[idx]>0.5:
-                            energy_if_xsp[idx] = energy_per_unit[idx]
-                    except:
-                        ()
-                if compute_charge:
-                    try: centre_charge[idx]=toplogical_charge(system, s, int(s.shape[2] / 2))
-                    except:()
-                    try: border_charge[idx] = toplogical_charge(system, s, 0)
-                    except:()
-                if compute_turns:
-                    try:            border_turn[idx] = (s[:, :, 0, :, 2] > 0.1).sum() + (s[:, :, -1, :, 2] > 0.1).sum()
-                    except:()
-                if compute_projections:
-                    try:            mean_z_projection[idx]=np.sum(np.dot(s,np.array([0.,0.,1.])))/(s.size/3)
-                    except:()
-                    try:            mean_z_centre_projection[idx] = np.sum(np.dot(s[:,:,int(s.shape[2]/2)],
-                                                                                  np.array([0., 0., 1.]))) / (s.shape[0]*s.shape[1])
-                    except:()
-                    try:            mean_z_centre_abs_projection[idx] = np.sum(np.abs(np.dot(s[:,:,int(s.shape[2]/2)],
-                                                                                  np.array([0., 0., 1.])))) / (s.shape[0]*s.shape[1])
-                    except:()
-                    try:            mean_x_projection[idx]=np.sum(np.dot(s,np.array([1.,0.,0.])))/(s.size/3)
-                    except:()
-                    try:            mean_x_abs_projection[idx] = np.sum(np.abs(np.dot(s,np.array([1.,0.,0.]))))/(s.size/3)
-                    except:()
-                    try:            mean_x_centre_abs_projection[idx] = np.sum(np.abs(np.dot(s[:,:,int(s.shape[2]/2)],
-                                                                                  np.array([1., 0., 0.])))) / (s.shape[0]*s.shape[1])
-                    except:()
-                    try:            mean_x_centre_abs_projection_angle[idx] = np.arccos(mean_x_centre_abs_projection[idx])*360/(2*np.pi)
-                    except:()
-                    try:
-                        mean_z_abs_projection[idx] = np.sum(np.abs(np.dot(s, np.array([0., 0., 1.])))) / (s.size / 3)
-                    except:
-                        ()
-                if compute_periods:
-                    try:            angle[idx] = utilities.get_angle(s)
-                    except:()
-                    try:            zperiod[idx] = utilities.get_zperiod(s)
-                    except:()
-                    try:            zturns[idx] = np.min([s.shape[2]/zperiod[idx],5])
-                    except:()
-                    try:
-                        xperiod[idx] = s.shape[0]
-                    except:
-                        ()
-                    try:
-                        x_tilted_period[idx] = xperiod[idx] * np.sin(angle[idx] * np.pi / 180)
-                    except:
-                        ()
-                if compute_skyrmion_size:
-                    try:
-                        if compute_skyrmion_size == 'fast':
-                            #print('fast skyrmion size')
-                            skyrmion_size[idx],bober_size[idx] = skyrmion_profile.fast_skyrmion_size_compute(s)
-                            if skyrmion_size[idx]>0.1 and bober_size[idx]>1.:
-                                is_skyrmion[idx]=True
-                                print(f'{is_skyrmion[idx] = }')
-                            elif skyrmion_size[idx]>0.1 and bober_size[idx]<=1.:
-                                is_toron[idx] = True
-                                print(f'{is_toron[idx] = }')
-                            elif skyrmion_size[idx]<=0.1 and bober_size[idx]>1.:
-                                is_bober[idx] = True
-                                print(f'{is_bober[idx] = }')
-                            #print(f'{skyrmion_size[idx] = }\t{bober_size[idx] = }')
-                        elif compute_skyrmion_size == 'full':
-                            #print('full skyrmion size')
-                            r_min,r_max,skyrmion_mask_sum=skyrmion_profile.skyrmion_profile(filename, show=False)
-                            skyrmion_size[idx]=r_max[int(s.shape[2]/2)]
-                            if np.isnan(skyrmion_size[idx]):
-                                skyrmion_size[idx]=0.
-                            #print(f'{r_max = }')
-                            #print(f'{skyrmion_size[idx] = }')
-                    except:()
-                if compute_negative:
-                    try:
-                        print('computing negative')
-                        rate, negative, normal2d, oper, first, second = \
-                            magnes.rate.dynamic_prefactor_htst(system, state, normal=None,tolerance=1e-5, number_of_modes=1)
-                        negative=np.array(negative)[0]
-                        smallest_eigenvalue[idx]=negative
-                        eigenvalue_positive[idx]=1 if negative>=0 else 0
-                        print(f'{negative = }')
-                    except:                ()
+                state_data=state_info(os.path.join(directory, filename),compute_energies=compute_energies,compute_charge= compute_charge,
+                                      compute_turns=compute_turns,compute_projections=compute_projections,compute_periods=compute_periods,
+                                      compute_negative=compute_negative,compute_skyrmion_size=compute_skyrmion_size, compute_localisation=compute_localisation)
+                try:
+                    state_type[idx] = state_data['state_type']
+                except:()
+                try:
+                    energy[idx] = state_data['energy']
+                except:()
+                try:
+                    energy_original[idx] = state_data['energy_original']
+                except:
+                    ()
+                try:
+                    energy_J[idx] = state_data['energy_J']
+                except:
+                    ()
+                try:
+                    energy_D[idx] = state_data['energy_D']
+                except:
+                    ()
+                try:
+                    energy_K[idx] = state_data['energy_K']
+                except:
+                    ()
+                try:
+                    energy_H[idx] = state_data['energy_H']
+                except:
+                    ()
+                try:
+                    energy_per_unit[idx] = state_data['energy_per_unit']
+                except:
+                    ()
+                try:
+                    epu_from_cone[idx] = state_data['epu_from_cone']
+                except:
+                    ()
+                try:
+                    epu_from_ferr[idx] = state_data['epu_from_ferr']
+                except:
+                    ()
+                try:
+                    local[idx] = state_data['local']
+                except:
+                    ()
+                try:
+                    centre_charge[idx] = state_data['centre_charge']
+                except:
+                    ()
+                try:
+                    border_charge[idx] = state_data['border_charge']
+                except:
+                    ()
+                try:
+                    border_turn[idx] = state_data['border_turn']
+                except:
+                    ()
+                try:
+                    mean_z_projection[idx] = state_data['mean_z_projection']
+                except:
+                    ()
+                try:
+                    mean_z_abs_projection[idx] = state_data['mean_z_abs_projection']
+                except:
+                    ()
+                try:
+                    mean_z_centre_projection[idx] = state_data['mean_z_centre_projection']
+                except:
+                    ()
+                try:
+                    mean_z_centre_abs_projection[idx] = state_data['mean_z_centre_abs_projection']
+                except:
+                    ()
+                try:
+                    mean_x_projection[idx] = state_data['mean_x_projection']
+                except:
+                    ()
+                try:
+                    mean_x_abs_projection[idx] = state_data['mean_x_abs_projection']
+                except:
+                    ()
+                try:
+                    mean_x_centre_abs_projection[idx] = state_data['mean_x_centre_abs_projection']
+                except:
+                    ()
+                try:
+                    mean_x_centre_abs_projection_angle[idx] = state_data['mean_x_centre_abs_projection_angle']
+                except:
+                    ()
+                try:
+                    angle[idx] = state_data['angle']
+                except:
+                    ()
+                try:
+                    zperiod[idx] = state_data['zperiod']
+                except:
+                    ()
+                try:
+                    zturns[idx] = state_data['zturns']
+                except:
+                    ()
+                try:
+                    energy_if_xsp[idx] = state_data['energy_if_xsp']
+                except:
+                    ()
+                try:
+                    xperiod[idx] = state_data['xperiod']
+                except:
+                    ()
+                try:
+                    x_tilted_period[idx] = state_data['x_tilted_period']
+                except:
+                    ()
+                try:
+                    smallest_eigenvalue[idx] = state_data['smallest_eigenvalue']
+                except:
+                    ()
+                try:
+                    eigenvalue_positive[idx] = state_data['eigenvalue_positive']
+                except:
+                    ()
+                try:
+                    skyrmion_size[idx] = state_data['skyrmion_size']
+                except:
+                    ()
+                try:
+                    bober_size[idx] = state_data['bober_size']
+                except:
+                    ()
+                try:
+                    is_skyrmion[idx] = state_data['is_skyrmion']
+                except:
+                    ()
+                try:
+                    is_toron[idx] = state_data['is_toron']
+                except:
+                    ()
+                try:
+                    is_bober[idx] = state_data['is_bober']
+                except:
+                    ()
 
-                if compute_localisation:
-                    try:  local[idx]=localisation(s)
-                    except:()
-                    try:
-                        if local[idx]<1:
-                            if abs(centre_charge[idx])<0.3 and abs(border_charge[idx])<0.3 and border_turn[idx]<20:
-                                state_type[idx]='cone'
-                            elif abs(centre_charge[idx]) < 0.3 and (abs(abs(border_charge[idx])-1) < 0.3 or border_turn[idx] > 20):
-                                state_type[idx] = 'bober'
-                            elif abs(abs(centre_charge[idx])-1)<0.3 and abs(border_charge[idx])<0.3 and border_turn[idx]<20:
-                                state_type[idx]='toron'
-                            elif abs(abs(centre_charge[idx]) - 1) < 0.3 and (abs(abs(border_charge[idx])-1) < 0.3 or border_turn[idx] > 20):
-                                state_type[idx] = 'skyrmion'
-                        else:
-                            print(f'{local[idx] = }')
-                            state_type[idx] = np.nan
-                    except: ()
             except:
                 energy[idx] = np.nan
                 state_type[idx] = np.nan
