@@ -2,7 +2,7 @@ import numpy as np
 import sys
 
 import os
-os.environ['MAGNES_BACKEND'] = 'numpy'
+
 import magnes
 import magnes.graphics
 from scipy.spatial.transform import Rotation as R

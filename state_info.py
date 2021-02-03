@@ -40,7 +40,6 @@ def localisation(state):
     return x0+x1+y0+y1
 
 def state_info(file):
-    os.environ['MAGNES_BACKEND'] = 'numpy'
     filename=Path(file)
 
     state_name=str.split(filename.stem, '_')[0]

@@ -285,13 +285,15 @@ def state_info(filename,compute_energies=True,compute_charge= False,compute_turn
         try:
             if compute_skyrmion_size == 'fast':
                 # print('fast skyrmion size')
-                data['skyrmion_size'], data['bober_size'] = skyrmion_profile.fast_skyrmion_size_compute(s)
+                data['skyrmion_size'], data['bober_size'], data['topbober_size'], data['bottombober_size'] = skyrmion_profile.fast_skyrmion_size_compute(s)
                 if data['skyrmion_size'] > 0.1 and data['bober_size'] > 1.:
                     data['is_skyrmion'] = True
                 elif data['skyrmion_size'] > 0.1 and data['bober_size'] <= 1.:
                     data['is_toron'] = True
                 elif data['skyrmion_size'] <= 0.1 and data['bober_size'] > 1.:
                     data['is_bober'] = True
+                if data['skyrmion_size'] > 0.1 and np.logical_xor(data['topbober_size'] > 1.,data['bottombober_size'] > 1.) :
+                    data['is_leech'] = True
                 # print(f'{skyrmion_size'] = }\t{bober_size'] = }')
             elif compute_skyrmion_size == 'full':
                 # print('full skyrmion size')
@@ -340,7 +342,7 @@ def state_info(filename,compute_energies=True,compute_charge= False,compute_turn
     return data
 
 def map_info(directory,var={},compute_energies=True,compute_charge= True,compute_turns=True,compute_projections=True,
-             compute_periods=True,compute_negative=True,compute_skyrmion_size=True, compute_localisation=True):
+             compute_periods=True,compute_negative=True,compute_skyrmion_size='fast', compute_localisation=True):
     print(f'{var = },{bool(var) = }')
     directory=Path(directory)
     K, state_name=mfm.content(str(directory))
@@ -377,10 +379,13 @@ def map_info(directory,var={},compute_energies=True,compute_charge= True,compute
     smallest_eigenvalue=np.full(K.shape[0], np.nan)
     eigenvalue_positive=np.full(K.shape[0], np.nan)
     skyrmion_size = np.full(K.shape[0], np.nan)
+    topbober_size = np.full(K.shape[0], np.nan)
+    bottombober_size = np.full(K.shape[0], np.nan)
     bober_size = np.full(K.shape[0], np.nan)
     is_skyrmion = np.full(K.shape[0], False)
     is_toron = np.full(K.shape[0], False)
     is_bober = np.full(K.shape[0], False)
+    is_leech = np.full(K.shape[0], False)
     t0=time.time()
     bar_max=len(K)
     with Bar('Processing', max=bar_max, suffix='%(index)d / %(max)d [%(elapsed_td)s / %(eta_td)s]') as bar:
@@ -516,6 +521,14 @@ def map_info(directory,var={},compute_energies=True,compute_charge= True,compute
                 except:
                     ()
                 try:
+                    topbober_size[idx] = state_data['topbober_size']
+                except:
+                    ()
+                try:
+                    bottombober_size[idx] = state_data['bottombober_size']
+                except:
+                    ()
+                try:
                     bober_size[idx] = state_data['bober_size']
                 except:
                     ()
@@ -529,6 +542,10 @@ def map_info(directory,var={},compute_energies=True,compute_charge= True,compute
                     ()
                 try:
                     is_bober[idx] = state_data['is_bober']
+                except:
+                    ()
+                try:
+                    is_leech[idx] = state_data['is_leech']
                 except:
                     ()
 
@@ -554,7 +571,8 @@ def map_info(directory,var={},compute_energies=True,compute_charge= True,compute
              energy_if_xsp=energy_if_xsp,xperiod=xperiod,x_tilted_period =x_tilted_period,
              epu_from_cone=epu_from_cone,epu_from_ferr=epu_from_ferr,
              smallest_eigenvalue=smallest_eigenvalue,eigenvalue_positive=eigenvalue_positive,
-             skyrmion_size=skyrmion_size,bober_size=bober_size, is_skyrmion = is_skyrmion, is_toron=is_toron,is_bober=is_bober,
+             skyrmion_size=skyrmion_size,bober_size=bober_size, topbober_size=topbober_size,bottombober_size=bottombober_size,
+             is_skyrmion = is_skyrmion, is_toron=is_toron,is_bober=is_bober, is_leech=is_leech,
              allow_pickle=True)
     structurize(str(directory),var)
 

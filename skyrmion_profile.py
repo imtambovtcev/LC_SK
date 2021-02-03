@@ -2,7 +2,7 @@
 import numpy as np
 import sys
 import os
-os.environ['MAGNES_BACKEND'] = 'numpy'
+
 import os.path
 import magnes
 import magnes.graphics
@@ -292,7 +292,10 @@ def fast_skyrmion_size_compute(s,criteria=1.9):
 	#print(f'{skyrmion_mask.shape= }')
 	skyrmion_mask = skyrmion_mask.sum(axis=0)
 	#print(f'{skyrmion_mask.shape= }')
-	return np.sqrt((skyrmion_mask[s.shape[2]//2]+skyrmion_mask[s.shape[2]//2-1]+skyrmion_mask[s.shape[2]//2+1])/3),np.sqrt((skyrmion_mask[0]+skyrmion_mask[-1])/2)
+	#print(np.sqrt((skyrmion_mask[s.shape[2]//2]+skyrmion_mask[s.shape[2]//2-1]+skyrmion_mask[s.shape[2]//2+1])/3),
+	#	  np.sqrt((skyrmion_mask[0]+skyrmion_mask[-1])/2),np.sqrt(skyrmion_mask[0]),np.sqrt(skyrmion_mask[-1]))
+	return np.sqrt((skyrmion_mask[s.shape[2]//2]+skyrmion_mask[s.shape[2]//2-1]+skyrmion_mask[s.shape[2]//2+1])/3),\
+		   np.sqrt((skyrmion_mask[0]+skyrmion_mask[-1])/2),np.sqrt(skyrmion_mask[0]),np.sqrt(skyrmion_mask[-1])
 
 if __name__ == "__main__":
 	show=False
