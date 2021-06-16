@@ -9,6 +9,7 @@ import magnes.graphics
 import magnes.utils
 import matplotlib.pyplot as plt
 from pathlib import Path
+import map_file_manager
 from scipy.interpolate import CubicSpline
 
 
@@ -76,8 +77,56 @@ def show(directory,show_extras=True):
 		if file.suffix=='.npz':
 			plot_npz(file,show_extras=show_extras)
 
+def make_path(data_path,save_file,sort='surf'):
+	file_list = [file for file in data_path.iterdir() if file.suffix == '.npz']
+	print(file_list)
+	if sort == 'surf':
+		file_list = sorted(file_list, key=lambda x: -float(x.name.split('_')[-2]))
+	else:
+		file_list=sorted(file_list,key= lambda x: float(x.name.split('_')[-1][:-4]))
+
+	print(file_list)
+
+	path=[]
+	for file in file_list:
+		container=magnes.io.load(str(file))
+		if 'STATE' in container:
+			print()
+			ini = container["STATE"]
+		else:
+			print(f'minimize from 0 image of the path with {container["PATH"].shape = }')
+			ini = list(container["PATH"])[0]
+		path.append(ini)
+
+	path=np.array(path)
+
+	shapes = np.array([s.shape for s in path])
+	xmin = np.min([shapes[:, 0].max(), 100])
+	size = [xmin, shapes[:, 1].max(), shapes[:, 2].max()]
+	PATH = []
+	for s0 in path:
+		s = np.copy(s0)
+		s = np.concatenate([s for i in range(np.max([size[0] // s.shape[0] + 1, 1]))], axis=0)
+		#     if size[0] % s0.shape[0] == 0:
+		#         s = np.concatenate([s for i in range(size[0]//s.shape[0])],axis=0)
+		#     if size[1] % s0.shape[1] == 0:
+		#         s = np.concatenate([s for i in range(size[1]//s.shape[1])],axis=1)
+		#     if size[2] % s.shape[2] == 0:
+		#         s = np.concatenate([s for i in range(size[2]//s.shape[2])],axis=2)
+		s = magnes.utils.state_reshape(s, size, [0, 0, 0])
+		PATH.append(s)
+	PATH = np.array(PATH)
+	print(PATH.shape)
+	system = magnes.io.load(str(file_list[0])).extract_system()
+	system = magnes.System(system.primitives, system.representatives, size, system.bc)
+	container = magnes.io.container('.npz')
+	container.store_system(system)
+	container['PATH'] = PATH
+	container['COMMENT'] = file_list
+	container.save(str(save_file))
 
 if __name__ == "__main__":
-	directory = './' if len(sys.argv) <= 1 else sys.argv[1]
-	show_extras = True if len(sys.argv) <= 2 else sys.argv[2]=='True'
-	show(directory,show_extras=show_extras)
+	directory = './' if len(sys.argv) <= 1 else sys.argv[1:]
+	#show_extras = True if len(sys.argv) <= 2 else sys.argv[2]=='True'
+	#file=map_file_manager.directory_to_npz(directory)
+	[show(d,show_extras='True') for d in directory]

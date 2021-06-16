@@ -9,6 +9,7 @@ from scipy.optimize import curve_fit
 from pathlib import Path
 import magnes
 from scipy.interpolate import interp1d
+import matplotlib.patches as mpatches
 
 font = {'family' : 'sans-serif',
         'size'   : 12}
@@ -434,6 +435,41 @@ def map_color(directory,show=False, point=None, plot_z_projection=True):
                 print(f'{plot_z_projection = }')
                 plot_z(x,y, point, directory=directory, state_name=data['state_name'],n=5, show=show)
             except:()
+
+def best(dict,savefile):
+    epu={}
+    for state in dict:
+        if dict[state].joinpath('best').is_dir():
+            data=np.load(dict[state].joinpath('best/info/map_info_structurized.npz'),allow_pickle=True)
+            epu[state]=data['energy_per_unit']
+        else:
+            data = np.load(dict[state].joinpath('info/map_info_structurized.npz'), allow_pickle=True)
+            epu[state] = data['energy_per_unit']
+    K=data['K']
+    print(f'{K.shape = }')
+    if np.any(np.array(K.shape)==1):
+        return K,0
+    else:
+        K=K.reshape(-1,2)
+        print(K.shape)
+        Kmax=[K[:,0].min(),K[:,0].max(),K[:, 1].min(), K[:, 1].max()]
+        key_list=list(epu.keys())
+        epu=np.array([epu[i] for i in epu])
+        epu=np.nanargmin(epu,axis=0)
+        values = np.unique(epu.ravel())
+        fig=plt.imshow(epu.T, interpolation='none',origin='lower',extent=Kmax)
+        fig.axes.set_aspect('auto')
+        colors = [fig.cmap(fig.norm(value)) for value in values]
+        # create a patch (proxy artist) for every color
+        patches = [mpatches.Patch(color=colors[i], label=key_list[i]) for i in range(len(values))]
+        # put those patched as legend-handles into the legend
+        plt.legend(handles=patches, bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        plt.xlabel(r'$\kappa^b$', fontsize=16)
+        plt.ylabel(r'$\kappa^s$', fontsize=16)
+        plt.tight_layout()
+        plt.savefig(savefile)
+        plt.show()
+        return K,[dict[key_list[i]] for i in list(epu.reshape(-1))]
 
 if __name__ == "__main__":
     directory = './' if len(sys.argv) <= 1 else sys.argv[1]

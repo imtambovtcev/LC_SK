@@ -135,7 +135,8 @@ def minimize(ini,J=1.,D=np.tan(np.pi/10),Kbulk=0.,Ksurf=0.,
     return system,state.download(),state.energy_contributions_sum()['total']
 
 
-def minimize_from_file(directory,load_file,save_file,J=1.,D=np.tan(np.pi/10),Kbulk=0.,Ksurf=0.,reshape=None,z_max_proj=None, precision = 1e-7, maxiter = None, boundary=['P','P','F']):
+def minimize_from_file(directory,load_file,save_file,J=1.,D=np.tan(np.pi/10),Kbulk=0.,Ksurf=0.,reshape=None,
+                       z_max_proj=None, precision = 1e-7, maxiter = None, boundary=['P','P','F']):
     directory=Path(directory)
     load_file=Path(load_file)
     save_file=Path(save_file)
@@ -236,7 +237,10 @@ def next_point(energy,max_steps_from_minimum,period_N,z_max_proj,max_period=np.i
     gap = gaps(energy[:, 0], period_N=period_N)
     if len(gap) > 0:
         period = gap[0]
-        ref = nnan_energy[np.argmin(np.abs(nnan_energy[:, 0] - period)), 0]
+        try:
+            ref = nnan_energy[np.argmin(np.abs(nnan_energy[:, 0] - period)), 0]
+        except:
+            ref = energy[0, 0]
         print('gap found')
     else:
         if len(nnan_energy) == 0 and len(energy)<10:
@@ -333,11 +337,18 @@ def set_xperiod_point(Kbulk_D,Ksurf_D,initials_set,directory,state_name='matspx'
                                                                            max_period=max_period)
 
     energy = np.array(energy)
-    p0 = energy[np.nanargmin(energy[:, 1]), 0]
+    if np.all(np.isnan(energy[:, 1])):
+        p0 = np.nan
+    else:
+        p0 = energy[np.nanargmin(energy[:, 1]), 0]
+
     print(f'{p0 = }')
     nnan_energy = energy[np.invert(np.isnan(energy[:, 1]))]
     delete_list = energy[np.isnan(energy[:, 1])].tolist()
-    n = np.nanargmin(nnan_energy[:, 1])
+    if np.all(np.isnan(energy[:, 1])):
+        n=0
+    else:
+        n = np.nanargmin(nnan_energy[:, 1])
     for idx, i in enumerate(nnan_energy):
         if np.abs(idx - n) > max_steps_from_minimum + 2:
             delete_list.append(i)

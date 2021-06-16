@@ -6,6 +6,13 @@ from pathlib import Path
 def Kaxis_sort(Kaxis):
     return [np.sort(np.unique(np.array(i))) for i in Kaxis]
 
+def state_name(directory):
+    filelist = [Path(file) for file in os.listdir(directory) if
+                len(file) > 3 and Path(file).suffix == '.npz' and len(str.split(file, '_')) > 2]
+    state_name = np.array([str.split(file.stem, '_')[0] for file in filelist])
+    assert np.all(state_name == state_name[0])
+    return state_name[0]
+
 def content(directory,dimension=None):
     filelist = [Path(file) for file in os.listdir(directory) if len(file)>3 and Path(file).suffix == '.npz' and len(str.split(file, '_'))>2]
     if len(filelist)>0:
@@ -68,6 +75,24 @@ def file_manager(directory,params={},dimension=None):
         if 'double' in params and params['double']:
             Kaxis = double(Kaxis)
     return missing(K,Kaxis),Kaxis
+
+def directory_to_npz(directory):
+    d = Path(directory)
+    return [f for f in d if f.suffix == '.npz']
+
+def list_to_npz(list):
+    flat_list = [item for sublist in list for item in sublist]
+    flat_list=[directory_to_npz(d) if Path(d).is_dir() else d for d in flat_list]
+    return [item for sublist in flat_list for item in sublist]
+
+def params_to_name(K,state_name='m'):
+    return state_name+''.join(['_{:.5f}'.format(i) for i in K])+'.npz'
+
+def get_nearest_point(dir,point):
+    _,Kaxis=file_manager(dir)
+    position=[np.argmin(np.abs(k-p)) if p is not None else np.arange(len(k)) for k,p in zip(Kaxis,point)]
+    #print(f'{position = }')
+    return position,[k[p] if type(p) is int else k for k,p in zip(Kaxis,position)]
 
 if __name__ == "__main__":
     directory = './' if len(sys.argv) <= 1 else sys.argv[1]

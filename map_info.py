@@ -20,6 +20,8 @@ font = {'family' : 'sans-serif',
 
 matplotlib.rc('font', **font)
 
+
+
 def nannanargmin(energy):
     mask=np.sum(np.invert(np.isnan(energy)),axis=2)
     mask=mask>0
@@ -27,7 +29,8 @@ def nannanargmin(energy):
     minenergy[mask]=np.nanargmin(energy[mask],axis=1)
     return minenergy,mask
 
-def get_best(directory):
+def get_best(directory,compute_energies=True,compute_charge= True,compute_turns=True,compute_projections=True,
+             compute_periods=True,compute_negative=True,compute_skyrmion_size='fast', compute_localisation=True):
     directory=Path(directory)
     file = np.load(str(directory.joinpath('info/map_info_structurized.npz')), allow_pickle=True)
     K=file['K']
@@ -46,7 +49,9 @@ def get_best(directory):
                 copyfile(str(directory.joinpath(old_filename)),str(directory.joinpath('best/').joinpath(new_filename)))
                 xperiod[ct0,ct1]=K[ct0,ct1,int(best[ct0,ct1])][2]
 
-    map_info(str(directory.joinpath('best/')),{'xperiod':xperiod})
+    map_info(str(directory.joinpath('best/')),{'xperiod':xperiod},compute_energies=compute_energies,compute_charge= compute_charge,
+                                      compute_turns=compute_turns,compute_projections=compute_projections,compute_periods=compute_periods,
+                                      compute_negative=compute_negative,compute_skyrmion_size=compute_skyrmion_size, compute_localisation=compute_localisation)
 
 
 def epu_from(directory):
@@ -79,6 +84,18 @@ def epu_from(directory):
     except:
        epu_ferr=np.nan
     try:
+        if Path(directory).parent.joinpath('helicoid_1').is_dir():
+            data_helicoid = np.load(
+                str(Path(directory).parent.joinpath('helicoid_1').joinpath('best/info/map_info_structurized.npz')),
+                allow_pickle=True)
+        elif Path(directory).parent.parent.joinpath('helicoid_1').is_dir():
+            data_helicoid = np.load(
+                str(Path(directory).parent.parent.joinpath('helicoid_1').joinpath('best/info/map_info_structurized.npz')),
+                allow_pickle=True)
+        epu_helicoid = data_helicoid['energy_per_unit']
+    except:
+       epu_helicoid=np.nan
+    try:
         epu_from_cone= epu-epu_cone
     except:
         epu_from_cone=np.nan
@@ -86,11 +103,16 @@ def epu_from(directory):
         epu_from_ferr= epu-epu_ferr
     except:
         epu_from_ferr=np.nan
-    return (epu_from_cone,epu_from_ferr)
+    try:
+        epu_from_helicoid= epu-epu_helicoid
+    except:
+        epu_from_helicoid=np.nan
+    return (epu_from_cone,epu_from_ferr,epu_from_helicoid)
 
 
 
-def structurize(directory,var_add):
+def structurize(directory,var_add,compute_energies=True,compute_charge= True,compute_turns=True,compute_projections=True,
+             compute_periods=True,compute_negative=True,compute_skyrmion_size='fast', compute_localisation=True):
     directory=Path(directory)
     file = np.load(str(directory.joinpath('info/map_info.npz')),allow_pickle=True)
     K=file['K']
@@ -135,10 +157,12 @@ def structurize(directory,var_add):
     print(f'{full_K.shape = }')
     np.savez(str(directory.joinpath('info/map_info_structurized.npz')),K=full_K,**{**var0,**var,**var_add},allow_pickle=True)
     if len(Klist)==3:
-        get_best(str(directory))
+        get_best(str(directory),compute_energies=compute_energies,compute_charge= compute_charge,
+                                      compute_turns=compute_turns,compute_projections=compute_projections,compute_periods=compute_periods,
+                                      compute_negative=compute_negative,compute_skyrmion_size=compute_skyrmion_size, compute_localisation=compute_localisation)
     if len(Klist)==2:
-        epu_from_cone,epu_from_ferr=epu_from(str(directory))
-        var_add2={'epu_from_cone':epu_from_cone,'epu_from_ferr':epu_from_ferr}
+        epu_from_cone,epu_from_ferr,epu_from_helicoid=epu_from(str(directory))
+        var_add2={'epu_from_cone':epu_from_cone,'epu_from_ferr':epu_from_ferr,'epu_from_helicoid':epu_from_helicoid}
         np.savez(str(directory.joinpath('info/map_info_structurized.npz')),K=full_K,**{**var0,**var,**var_add,**var_add2},allow_pickle=True)
 
 
@@ -162,6 +186,9 @@ def localisation(state):
     y1 = y1 - y1[0]
     y1 = np.linalg.norm(y1)
     return (x0+x1+y0+y1)/(2*(state.shape[0]+state.shape[1])*state.shape[2])
+
+def angle(s):
+    return 0
 
 def state_info(filename,compute_energies=True,compute_charge= False,compute_turns=False,compute_projections=False,
              compute_periods=True,compute_negative=False,compute_skyrmion_size=False, compute_localisation=False):
@@ -357,6 +384,7 @@ def map_info(directory,var={},compute_energies=True,compute_charge= True,compute
     energy_per_unit = np.full(K.shape[0], np.nan)
     epu_from_cone = np.full(K.shape[0], np.nan)
     epu_from_ferr = np.full(K.shape[0], np.nan)
+    epu_from_helicoid = np.full(K.shape[0], np.nan)
     local=np.full(K.shape[0],np.nan)
     centre_charge=np.full(K.shape[0],np.nan)
     border_charge=np.full(K.shape[0],np.nan)
@@ -434,6 +462,10 @@ def map_info(directory,var={},compute_energies=True,compute_charge= True,compute
                     ()
                 try:
                     epu_from_ferr[idx] = state_data['epu_from_ferr']
+                except:
+                    ()
+                try:
+                    epu_from_helicoid[idx] = state_data['epu_from_helicoid']
                 except:
                     ()
                 try:
@@ -569,12 +601,14 @@ def map_info(directory,var={},compute_energies=True,compute_charge= True,compute
              mean_x_centre_abs_projection=mean_x_centre_abs_projection,
              mean_x_centre_abs_projection_angle=mean_x_centre_abs_projection_angle,angle=angle,zperiod=zperiod,zturns=zturns,
              energy_if_xsp=energy_if_xsp,xperiod=xperiod,x_tilted_period =x_tilted_period,
-             epu_from_cone=epu_from_cone,epu_from_ferr=epu_from_ferr,
+             epu_from_cone=epu_from_cone,epu_from_ferr=epu_from_ferr,epu_from_helicoid=epu_from_helicoid,
              smallest_eigenvalue=smallest_eigenvalue,eigenvalue_positive=eigenvalue_positive,
              skyrmion_size=skyrmion_size,bober_size=bober_size, topbober_size=topbober_size,bottombober_size=bottombober_size,
              is_skyrmion = is_skyrmion, is_toron=is_toron,is_bober=is_bober, is_leech=is_leech,
              allow_pickle=True)
-    structurize(str(directory),var)
+    structurize(str(directory),var,compute_energies=compute_energies,compute_charge= compute_charge,
+                                      compute_turns=compute_turns,compute_projections=compute_projections,compute_periods=compute_periods,
+                                      compute_negative=compute_negative,compute_skyrmion_size=compute_skyrmion_size, compute_localisation=compute_localisation)
 
 if __name__ == "__main__":
     directory = Path('./') if len(sys.argv) <= 1 else Path(sys.argv[1])
