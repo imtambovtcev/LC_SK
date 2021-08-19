@@ -2,13 +2,13 @@
 import numpy as np
 import sys
 import os
-
 import os.path
 import magnes
 import magnes.graphics
 import magnes.utils
 import matplotlib.pyplot as plt
 from pathlib import Path
+import utilities
 import map_file_manager
 from scipy.interpolate import CubicSpline
 
@@ -39,6 +39,21 @@ def plot_state(system,s,directory,file,show_extras=False):
 		plt.ylabel(r'$m_x$')
 		plt.xlabel(r'$z$')
 		plt.savefig(directory.joinpath(file + '_x.pdf'), bbox_inches='tight')
+		plt.close('all')
+
+		# toplogical charge
+		toplogical_charge=[utilities.toplogical_charge(system,s,i) for i  in range(s.shape[2])]
+		plt.plot(toplogical_charge)
+		plt.ylabel(r'$Charge$')
+		plt.xlabel(r'$z$')
+		plt.savefig(directory.joinpath(file + '_tch.pdf'), bbox_inches='tight')
+		plt.close('all')
+
+		toplogical_charge_vertical = [utilities.toplogical_charge_vertical(system, s, i) for i in range(s.shape[0])]
+		plt.plot(toplogical_charge_vertical)
+		plt.ylabel(r'$Charge$')
+		plt.xlabel(r'$x$')
+		plt.savefig(directory.joinpath(file + '_tch_v.pdf'), bbox_inches='tight')
 		plt.close('all')
 
 def plot_npz(file,show_extras=False):

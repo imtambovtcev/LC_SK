@@ -3,6 +3,7 @@ from scipy.interpolate import CubicSpline
 import magnes
 from pathlib import Path
 import minimize
+from scipy.interpolate import RegularGridInterpolator
 
 def get_angle(s):
     qm = s[:, int(s.shape[1] / 2), int(s.shape[2] / 2) - 3, 0, 1]
@@ -63,7 +64,17 @@ def z_invert_state(file):
     container["PATH"] = [s]
     container.save(str(file))
 
+def toplogical_charge(system,s,layer_n):
+    layer = s[:, :, layer_n, :, :].reshape([system.size[0], system.size[1], 3])
+    dx = np.diff(np.concatenate((layer, layer[-1, :, :].reshape(1, system.size[1], 3)), axis=0), axis=0)
+    dy = np.diff(np.concatenate((layer, layer[:, -1, :].reshape(system.size[1], 1, 3)), axis=1), axis=1)
+    return 3*np.sum(np.cross(dx,dy)*layer)/(4*np.pi*np.pi)
 
+def toplogical_charge_vertical(system,s,layer_n):
+    layer = s[layer_n, :, :, :, :].reshape([system.size[1], system.size[2], 3])
+    dx = np.diff(np.concatenate((layer, layer[-1, :, :].reshape(1, system.size[2], 3)), axis=0), axis=0)
+    dy = np.diff(np.concatenate((layer, layer[:, -1, :].reshape(system.size[1], 1, 3)), axis=1), axis=1)
+    return 3*np.sum(np.cross(dx,dy)*layer)/(4*np.pi*np.pi)
 
 def reshape_vector(vector,new_size):
     print(vector.shape)
@@ -101,7 +112,7 @@ def system_reshape(system,new_size):
         new_system.add(magnes.Anisotropy(axis=new_ani.axis, strength=new_ani.strength))
     return new_system
 
-def smooth_state_reshape(file,save,new_size):
+def smooth_file_reshape(file,save,new_size):
     file = Path(file)
     container = magnes.io.load(str(file))
     system = container.extract_system()
@@ -109,10 +120,10 @@ def smooth_state_reshape(file,save,new_size):
     size=s.shape[:3]
     if size[0]!=new_size[0]:
         print('x_size_change')
-        s = minimize.change_x_shape(state=s, zsize=new_size[0])
+        s = minimize.change_x_shape(state=s, xsize=new_size[0])
     if size[1] != new_size[1]:
         print('y_size_change')
-        s = minimize.change_y_shape(state=s, zsize=new_size[1])
+        s = minimize.change_y_shape(state=s, ysize=new_size[1])
     if size[2]!=new_size[2]:
         print('z_size_change')
         s=minimize.change_z_shape(state=s,zsize=new_size[2])
@@ -122,6 +133,50 @@ def smooth_state_reshape(file,save,new_size):
     container.store_system(system_reshape(system,new_size=new_size))
     container["PATH"] = [s]
     container.save(str(save))
+
+def interpolation(si,new_size):
+    #print(f'{si.shape = }')
+    old_size=si.shape[:3]
+    #print('---interpolation---')
+    #print(f'{old_size = }')
+    #print(f'{new_size = }')
+    x_old = np.linspace(0.,1., old_size[0])
+    y_old = np.linspace(0.,1., old_size[1])
+    z_old = np.linspace(0.,1., old_size[2])
+    #print(f'{x_old.shape = }')
+    x_new = np.linspace(0., 1., new_size[0])
+    y_new = np.linspace(0., 1., new_size[1])
+    z_new = np.linspace(0., 1., new_size[2])
+    #print(f'{x_new.shape = }')
+    new_grid=np.array(np.meshgrid(x_new,y_new,z_new,indexing='ij'))
+    new_grid=np.moveaxis(new_grid,0,-1)
+    new_grid = new_grid.reshape([-1, 3])
+    #print(f'{new_grid.shape = }')
+    interpolating_function = RegularGridInterpolator((x_old, y_old, z_old), si)
+    new_si=interpolating_function(new_grid)
+    #print(f'{new_si.shape = }')
+    new_si=new_si.reshape(new_size)
+    #print(f'{new_si.shape = }')
+    return new_si
+
+def smooth_state_reshape(s,new_size):
+    size=list(s.shape[:3])
+    #print(f'0.{size = }')
+    sx=interpolation(s[:,:,:,0,0],new_size)
+    sy=interpolation(s[:,:,:,0,1],new_size)
+    sz=interpolation(s[:,:,:,0,2],new_size)
+    s=np.array([sx,sy,sz])
+    #print(f'1.{s.shape = }')
+    s=np.moveaxis(s,0,-1)
+    #print(f'2.{s.shape = }')
+    s=np.expand_dims(s,axis=3)
+    #print(f'3.{s.shape = }')
+    return s
+
+def smooth_path_reshape(path,new_size):
+    new_path=np.array([smooth_state_reshape(s,new_size=new_size) for s in path])
+    #print(f'{new_path.shape = }')
+    return new_path
 
 def get_size(file):
     file = Path(file)

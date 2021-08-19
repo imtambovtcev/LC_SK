@@ -50,6 +50,7 @@ def change_x_shape(state, xsize):
                                               np.linspace(0, 1, size0[2], endpoint=True), sy.T)
         interp_z = scipy.interpolate.interp2d(np.linspace(0, 1, size0[0], endpoint=True),
                                               np.linspace(0, 1, size0[2], endpoint=True), sz.T)
+
         for x in range(xsize):
             for y in range(size0[1]):
                 for z in range(size0[2]):

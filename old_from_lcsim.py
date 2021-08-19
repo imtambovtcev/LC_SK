@@ -16,13 +16,12 @@ from pathlib import Path
 from termcolor import colored
 from minimize import *
 
-ref_file=Path('/home/ivan/LC_SK/initials/cone/cone1/20.npz')
-initial = Path('/home/ivan/LC_SK/skt/skyrmion')
-directory = Path('/home/ivan/LC_SK/skt/cone')
+if __name__ == "__main__":
+    load_file = Path(sys.argv[1])
+    save_file = Path(sys.argv[2])
+    print(f'{save_file = }')
+    load=magnes.io.load(str(load_file))
+    Path=load['PATH']
+    print(f'{Path.shape = }')
+    system = magnes.SquareLattice(Path.shape, bc=[magnes.BC.FREE, magnes.BC.FREE, magnes.BC.FREE], J=0, DM_rho=0, DM_phi=0)
 
-print(f'{initial = }')
-print(f'{directory = }')
-
-make_map_from_map(directory=initial,save_directory=directory,ref_file=ref_file,state_name='cone',maxiter=10000)
-
-map_info.map_info(directory)
