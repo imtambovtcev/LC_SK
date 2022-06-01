@@ -15,6 +15,8 @@ import utilities
 
 load=Path('/home/ivan/LC_SK/lcsim/D=20/1400_from_nothing_3.npz')
 save=Path('/home/ivan/LC_SK/lcsim/D=20/1400_view.npz')
+n=2 #multiplyer
+
 container = magnes.io.load(str(load))
 system=container.extract_system()
 primitives=system.primitives
@@ -27,7 +29,7 @@ print(f'{system.size = }')
 path=container["PATH"]
 print(f'{path.shape = }')
 path= list(path)
-new_size=(np.array(size)-1)*3+1
+new_size=(np.array(size)-1)*n+1
 print(f'{new_size = }')
 path=utilities.smooth_path_reshape(path,new_size)
 new_size=path.shape[1:4]
